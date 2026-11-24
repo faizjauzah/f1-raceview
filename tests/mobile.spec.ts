@@ -28,6 +28,16 @@ test('mobile layout docks collapsible panels above the playback bar', async ({ p
     'true',
   )
 
+  // The race dropdown must stay wide enough to read full race names and be touch friendly.
+  await page.locator('[aria-label="Select race"]').click()
+  const racePopup = page.locator('[data-slot="select-content"]')
+  await expect(racePopup).toBeVisible()
+  expect((await racePopup.boundingBox())!.width).toBeGreaterThan(340)
+  const raceOption = page.getByRole('option', { name: /2025 · Australian Grand Prix/ })
+  await expect(raceOption).toBeVisible()
+  expect((await raceOption.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+  await page.keyboard.press('Escape')
+
   await page.getByRole('button', { name: 'Collapse live timing' }).click()
   await expect(page.getByRole('button', { name: 'Expand live timing' })).toBeVisible()
 

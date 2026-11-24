@@ -82,12 +82,16 @@ export function Header({
             {selectedRace ? `${selectedRace.year} · ${selectedRace.name}` : 'Select race'}
           </span>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="w-[calc(100vw-1rem)] sm:w-(--anchor-width)">
           {[...seasons.entries()].map(([year, items]) => (
             <SelectGroup key={year}>
-              <SelectLabel>{year}</SelectLabel>
+              <SelectLabel className="px-3 sm:px-1.5">{year}</SelectLabel>
               {items.map((race) => (
-                <SelectItem key={race.id} value={race.id} className="text-xs">
+                <SelectItem
+                  key={race.id}
+                  value={race.id}
+                  className="min-h-11 py-2.5 pl-3 text-sm sm:min-h-0 sm:py-1 sm:pl-1.5 sm:text-xs"
+                >
                   {race.year} · {race.name}
                 </SelectItem>
               ))}
