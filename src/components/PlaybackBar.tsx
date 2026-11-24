@@ -27,23 +27,25 @@ export function PlaybackBar({ race, store, snapshot }: PlaybackBarProps) {
   const percent = (value: number) => `${Math.max(0, Math.min(100, (value / duration) * 100))}%`
 
   return (
-    <div className="sticky bottom-0 z-30 shrink-0 border-t bg-zinc-950/80 px-3 py-3 backdrop-blur sm:px-5">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <div className="flex items-center gap-2">
-          <div className="w-[90px] sm:w-[120px]">
-            <div className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Lap</div>
-            <div className="telemetry text-sm text-zinc-200">
-              {lap}
-              <span className="text-zinc-600"> / {race.meta.totalLaps}</span>
-            </div>
-          </div>
-          <div className="w-[90px] sm:w-[120px]">
-            <div className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Race time</div>
-            <div className="telemetry text-sm text-zinc-200">{formatClock(snapshot.time)}</div>
+    <div
+      data-testid="playback-bar"
+      className="sticky bottom-0 z-30 shrink-0 border-t bg-zinc-950/80 px-3 py-2 backdrop-blur sm:px-5 sm:py-3"
+    >
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 gap-y-2 sm:flex sm:flex-wrap sm:gap-x-4 sm:gap-y-3">
+        <div className="col-start-1 row-start-1 sm:w-[120px]">
+          <div className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Lap</div>
+          <div className="telemetry text-sm text-zinc-200">
+            {lap}
+            <span className="text-zinc-600"> / {race.meta.totalLaps}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="col-start-1 row-start-3 sm:w-[120px]">
+          <div className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Race time</div>
+          <div className="telemetry text-sm text-zinc-200">{formatClock(snapshot.time)}</div>
+        </div>
+
+        <div className="col-start-2 row-start-3 flex items-center gap-2 justify-self-center">
           <Button
             variant="outline"
             size="icon"
@@ -73,7 +75,7 @@ export function PlaybackBar({ race, store, snapshot }: PlaybackBarProps) {
           </Button>
         </div>
 
-        <div className="relative min-w-[260px] flex-1 pt-1.5">
+        <div className="relative col-span-3 row-start-2 w-full pt-1.5 sm:w-auto sm:min-w-[260px] sm:flex-1">
           <div className="pointer-events-none absolute inset-x-1 top-0 h-3 overflow-hidden rounded-sm">
             {race.status
               .filter((interval) => interval.status !== 1)
@@ -116,7 +118,7 @@ export function PlaybackBar({ race, store, snapshot }: PlaybackBarProps) {
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="col-start-3 row-start-3 flex items-center gap-2 justify-self-end">
           <span className="hidden text-[9px] uppercase tracking-[0.18em] text-zinc-600 sm:block">
             Speed
           </span>

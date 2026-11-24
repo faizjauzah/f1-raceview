@@ -10,7 +10,8 @@ A zero-backend Formula 1 race replay and telemetry visualiser. Pre-processed rac
 
 - 3D circuit ribbon with real elevation (4× exaggeration), start/finish gantry, turn markers, and every car smoothly interpolated between one-second frames.
 - Three-column desktop layout: live timing on the left, 3D track in the centre, events on the right; both sidebars stay visible and each collapses to a narrow rail.
-- Free-orbit, top-down, and selected-driver follow cameras.
+- Phones use a bottom accordion: the track fills the screen, the timer and event headers dock above the playback bar, and only one panel expands at a time. The playback bar puts the timeline above every button.
+- Free-orbit, top-down, and selected-driver follow cameras; drag the track to rotate and scroll or pinch to zoom.
 - Follow mode shows a compact car-telemetry panel with speed, gear, throttle, brake, DRS, lap, tyre, and pit count for the followed car.
 - Live classification tower with position changes, team colours, tyre compound, pit count, and lap.
 - Overtake and pit-stop feed with driver search, filters, selected-driver filtering, and click-to-seek to three seconds before the event.
@@ -38,7 +39,7 @@ Race JSON is committed in `public/data/`, so no Python step is needed to run the
 - **Space** — play or pause. This is global, except while a select, slider, switch, tab, link, or text field is focused, where the control keeps its native Space behaviour.
 - **↑ / ↓** — previous or next driver in the running order. Inside the timing tower the focus moves with the selection.
 - **← / →** — previous or next overtake or pit event. The replay seeks to three seconds before it and focuses the event card in the right sidebar.
-- **Enter** — activate the focused button, tab, or link. Use this for buttons because Space is reserved for playback.
+- **Enter** — activate the focused button, tab, or link. Anywhere else (the 3D viewport, page background, or the main region) it toggles the follow view: follow the selected driver (or the leader if none is selected), then press Enter again to return to the previous camera.
 - **Escape** — clear the selected driver and pinned event.
 - **Sidebar collapse** — Tab to the collapse button in a sidebar header and press Enter; Tab to the rail button and press Enter to reopen it.
 - **Tab** — move through the skip link, race selector, camera presets, 3D viewport, timing tower, event feed, and playback controls.

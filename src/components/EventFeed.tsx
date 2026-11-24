@@ -114,6 +114,7 @@ export function EventFeed({
             type="button"
             onClick={onCollapse}
             aria-label="Collapse events"
+            aria-expanded
             title="Collapse events"
             className="flex size-6 items-center justify-center rounded text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset"
           >

@@ -24,6 +24,11 @@ test('loads, plays, and seeks to an event without runtime errors', async ({ page
   await page.keyboard.press('Enter')
   await expect(page.locator('#main')).toBeFocused()
 
+  await page.locator('[data-driver-marker="NOR"]').dispatchEvent('click')
+  await expect(page.getByTestId('a11y-status')).toContainText('Driver NOR selected')
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('a11y-status')).toContainText('No driver selected')
+
   await selectRace(page, /2024 · Bahrain Grand Prix/)
   await expect(page.getByRole('combobox', { name: 'Select race' })).toHaveText(
     /2024 · Bahrain Grand Prix/,

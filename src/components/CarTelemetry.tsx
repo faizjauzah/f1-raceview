@@ -38,11 +38,11 @@ function drsState(drs: number | null) {
 function Pedal({ label, value, color }: { label: string; value: number | null; color: string }) {
   return (
     <div>
-      <div className="mb-0.5 flex items-center justify-between text-[8px] uppercase tracking-[0.16em] text-zinc-600">
+      <div className="mb-0.5 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-zinc-600">
         <span>{label}</span>
         <span className="telemetry text-zinc-400">{value ?? '—'}</span>
       </div>
-      <div className="h-1 overflow-hidden rounded-full bg-zinc-800">
+      <div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
         <div
           className={`h-full rounded-full ${color}`}
           style={{ width: `${value ?? 0}%` }}
@@ -113,19 +113,19 @@ export function CarTelemetry({ race, selectedDriver }: CarTelemetryProps) {
     <div
       data-testid="car-telemetry"
       aria-hidden="true"
-      className="pointer-events-none w-[224px] max-w-[calc(100vw-2rem)] rounded-md border border-zinc-800/70 bg-zinc-950/85 px-2.5 py-2 backdrop-blur sm:w-[280px]"
+      className="pointer-events-none w-[260px] max-w-[calc(100vw-2rem)] rounded-md border border-zinc-800/70 bg-zinc-950/85 px-3 py-2.5 backdrop-blur sm:w-[340px]"
     >
       <div className="flex items-center gap-1.5">
         <span className="h-3 w-[2px] rounded-full" style={{ backgroundColor: color }} />
-        <span className="telemetry text-[11px] font-semibold tracking-wide text-zinc-100">
+        <span className="telemetry text-[14px] font-semibold tracking-wide text-zinc-100">
           {driver.code}
         </span>
-        <span className="telemetry text-[9px] text-zinc-500">#{driver.number}</span>
-        <span className="hidden min-w-0 truncate text-[9px] text-zinc-400 sm:inline">
+        <span className="telemetry text-[11px] text-zinc-500">#{driver.number}</span>
+        <span className="hidden min-w-0 truncate text-[11px] text-zinc-400 sm:inline">
           {driver.name}
         </span>
         <span
-          className={`ml-auto shrink-0 rounded border px-1 py-0.5 text-[8px] font-semibold uppercase tracking-[0.14em] ${
+          className={`ml-auto shrink-0 rounded border px-1 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${
             leaderFallback
               ? 'border-amber-500/40 text-amber-300'
               : active
@@ -142,30 +142,30 @@ export function CarTelemetry({ race, selectedDriver }: CarTelemetryProps) {
           <div className="flex items-baseline gap-1">
             <span
               data-testid="car-speed"
-              className="telemetry text-2xl font-semibold leading-none text-zinc-100"
+              className="telemetry text-3xl font-semibold leading-none text-zinc-100"
             >
               {speed ?? '–'}
             </span>
-            <span className="text-[8px] uppercase tracking-[0.18em] text-zinc-500">km/h</span>
+            <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">km/h</span>
           </div>
           <div className="ml-auto flex items-center gap-1.5">
-            <span className="text-[8px] uppercase tracking-[0.16em] text-zinc-600">Gear</span>
+            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">Gear</span>
             <span
               data-testid="car-gear"
-              className="telemetry flex size-6 items-center justify-center rounded border border-zinc-700 bg-zinc-900 text-xs font-semibold text-zinc-100"
+              className="telemetry flex size-7 items-center justify-center rounded border border-zinc-700 bg-zinc-900 text-sm font-semibold text-zinc-100"
             >
               {gear === null ? '–' : gear === 0 ? 'N' : gear}
             </span>
           </div>
         </div>
-        <div className="mt-1 h-1 overflow-hidden rounded-full bg-zinc-800">
+        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-zinc-800">
           <div
             className="h-full rounded-full"
             style={{ width: `${speedPercent}%`, backgroundColor: color }}
           />
         </div>
         {!hasTelemetry && active && (
-          <div className="mt-1 text-[8px] uppercase tracking-[0.16em] text-amber-300/80">
+          <div className="mt-1 text-[10px] uppercase tracking-[0.16em] text-amber-300/80">
             No telemetry
           </div>
         )}
@@ -174,24 +174,24 @@ export function CarTelemetry({ race, selectedDriver }: CarTelemetryProps) {
           <Pedal label="Thr" value={throttle} color="bg-emerald-400" />
           <Pedal label="Brk" value={brake} color="bg-red-400" />
           <div className="text-right">
-            <div className="text-[8px] uppercase tracking-[0.16em] text-zinc-600">DRS</div>
-            <div className={`text-[9px] font-semibold tracking-wider ${drsMeta.className}`}>
+            <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">DRS</div>
+            <div className={`text-[11px] font-semibold tracking-wider ${drsMeta.className}`}>
               {drsMeta.label}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-2 flex items-center gap-2 border-t border-zinc-800/70 pt-1.5 text-[9px] text-zinc-500">
+      <div className="mt-2 flex items-center gap-2 border-t border-zinc-800/70 pt-1.5 text-[11px] text-zinc-500">
         <span className="telemetry">L{lap}</span>
         <span
           title={tyreMeta.label}
-          className={`flex size-4 items-center justify-center rounded-full border text-[8px] font-bold ${tyreMeta.className}`}
+          className={`flex size-5 items-center justify-center rounded-full border text-[9px] font-bold ${tyreMeta.className}`}
         >
           {tyreMeta.short}
         </span>
         <span>{pitCount === 0 ? 'no pit' : `${pitCount} pit${pitCount > 1 ? 's' : ''}`}</span>
-        <span className="ml-auto hidden max-w-[120px] truncate text-[8px] text-zinc-600 sm:inline">
+        <span className="ml-auto hidden max-w-[120px] truncate text-[10px] text-zinc-600 sm:inline">
           {driver.team}
         </span>
       </div>

@@ -40,4 +40,7 @@ _Avoid_: speed (alone), velocity
 
 **Elevation exaggeration**: The vertical scale applied to the track's real elevation. It makes gradients visible at the scale of a whole circuit.
 
+**Driver marker**: The clickable dot and code label that represent a driver on the 3D track. Selecting one follows that driver.
+_Avoid_: dot, car dot
+
 _Avoid_: "track model" for the 3D ribbon; "lap time" for race clock time; "pass" for any position change.

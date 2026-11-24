@@ -40,11 +40,12 @@ export function RaceViewport({
   return (
     <div
       role="region"
-      aria-label="3D race track. Space plays or pauses. Arrow up and down change the selected driver. Arrow left and right change the selected event."
-      aria-keyshortcuts="Space ArrowUp ArrowDown ArrowLeft ArrowRight"
+      aria-label="3D race track. Space plays or pauses. Arrow up and down change the selected driver. Arrow left and right change the selected event. Enter toggles the follow view."
+      aria-keyshortcuts="Space ArrowUp ArrowDown ArrowLeft ArrowRight Enter"
       tabIndex={0}
       onPointerDown={(event) => event.currentTarget.focus({ preventScroll: true })}
-      className="relative h-full min-h-[320px] w-full overflow-hidden bg-[#09090b] outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-inset"
+      onDragStart={(event) => event.preventDefault()}
+      className="relative h-full min-h-0 w-full select-none overflow-hidden bg-[#09090b] outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-inset"
     >
       <Canvas
         aria-hidden="true"
@@ -53,13 +54,14 @@ export function RaceViewport({
         gl={{ antialias: true, powerPreference: 'high-performance' }}
       >
         <color attach="background" args={['#09090b']} />
-        <fog attach="fog" args={['#09090b', 150, 330]} />
+        <Sky />
+        <fog attach="fog" args={['#09090b', 320, 900]} />
         <ambientLight intensity={0.85} />
         <hemisphereLight args={['#d4d4d8', '#18181b', 0.55]} />
         <directionalLight position={[60, 120, 40]} intensity={1.1} />
         <pointLight position={[0, 70, 0]} intensity={0.5} color="#e4e4e7" />
 
-        <gridHelper args={[260, 26, '#18181b', '#111114']} position={[0, -0.35, 0]} />
+
         <Track track={race.track} transform={transform} />
         <StartFinish track={race.track} transform={transform} />
         <CornerLabels track={race.track} transform={transform} />
@@ -90,18 +92,18 @@ export function RaceViewport({
       </Canvas>
 
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3 sm:p-4">
-        <div className="rounded-md border border-zinc-800/70 bg-zinc-950/70 px-2.5 py-1.5 backdrop-blur">
-          <div className="text-[8px] uppercase tracking-[0.2em] text-zinc-600">Track</div>
-          <div className="text-[11px] font-medium text-zinc-200">
+        <div className="rounded-md border border-zinc-800/70 bg-zinc-950/70 px-3 py-2 backdrop-blur">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">Track</div>
+          <div className="text-[14px] font-medium text-zinc-200">
             {race.meta.circuitName}
             <span className="text-zinc-600"> · {race.meta.year}</span>
           </div>
-          <div className="telemetry mt-0.5 text-[8px] text-zinc-500">
+          <div className="telemetry mt-1 text-[10px] text-zinc-500">
             {(race.track.length / 1000).toFixed(2)} km · 4× elevation
           </div>
         </div>
-        <div className="flex items-center gap-1.5 rounded-full border border-zinc-800/70 bg-zinc-950/70 px-2 py-1 text-[8px] uppercase tracking-[0.16em] text-zinc-500 backdrop-blur">
-          <span className={`size-1 rounded-full ${statusMeta.dot}`} />
+        <div className="flex items-center gap-2 rounded-full border border-zinc-800/70 bg-zinc-950/70 px-2.5 py-1.5 text-[10px] uppercase tracking-[0.16em] text-zinc-500 backdrop-blur">
+          <span className={`size-1.5 rounded-full ${statusMeta.dot}`} />
           {statusMeta.short}
         </div>
       </div>
@@ -110,17 +112,17 @@ export function RaceViewport({
         {cameraMode === 'follow' ? (
           <CarTelemetry race={race} selectedDriver={selectedDriver} />
         ) : (
-          <div className="rounded border border-zinc-800/60 bg-zinc-950/60 px-2 py-1 text-[9px] text-zinc-500 backdrop-blur">
+          <div className="rounded border border-zinc-800/60 bg-zinc-950/60 px-3 py-1.5 text-[11px] text-zinc-500 backdrop-blur">
             <div>Drag to orbit · scroll to zoom</div>
-            <div className="mt-0.5 hidden text-[9px] text-zinc-500 sm:block">
+            <div className="mt-1 hidden text-[11px] text-zinc-500 sm:block">
               Space play/pause · ↑↓ driver · ←→ event
             </div>
-            <div className="hidden text-[9px] text-zinc-500 sm:block">
-              Enter activates the focused control
+            <div className="hidden text-[11px] text-zinc-500 sm:block">
+              Enter follows the selected driver
             </div>
           </div>
         )}
-        <div className="hidden items-center gap-3 text-[9px] text-zinc-500 sm:flex">
+        <div className="hidden items-center gap-3 text-[11px] text-zinc-500 sm:flex">
           {race.track.corners.length} turns · {race.drivers.length} drivers
         </div>
       </div>
@@ -138,6 +140,87 @@ export function RaceViewport({
         </div>
       )}
     </div>
+  )
+}
+
+function Sky() {
+  const mesh = useRef<THREE.Mesh>(null)
+  const material = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        uniforms: {
+          top: { value: new THREE.Color('#09090b') },
+          horizon: { value: new THREE.Color('#1c1c22') },
+          line: { value: new THREE.Color('#3f3f46') },
+          bottom: { value: new THREE.Color('#0b0b0e') },
+          minor: { value: new THREE.Color('#1f1f25') },
+          major: { value: new THREE.Color('#2a2a31') },
+          ground: { value: new THREE.Color('#0b0b0e') },
+          groundY: { value: -0.35 },
+        },
+        vertexShader: `
+          varying vec3 vWorldPosition;
+          void main() {
+            vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+            vWorldPosition = worldPosition.xyz;
+            gl_Position = projectionMatrix * viewMatrix * worldPosition;
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 top;
+          uniform vec3 horizon;
+          uniform vec3 line;
+          uniform vec3 bottom;
+          uniform vec3 minor;
+          uniform vec3 major;
+          uniform vec3 ground;
+          uniform float groundY;
+          varying vec3 vWorldPosition;
+
+          float gridLine(vec2 coord) {
+            vec2 width = fwidth(coord);
+            vec2 distance = abs(fract(coord - 0.5) - 0.5) / width;
+            return 1.0 - min(min(distance.x, distance.y), 1.0);
+          }
+
+          void main() {
+            vec3 direction = normalize(vWorldPosition - cameraPosition);
+            float height = direction.y;
+            vec3 color = mix(horizon, top, smoothstep(0.0, 0.22, height));
+            color = mix(color, bottom, smoothstep(0.0, 0.08, -height));
+            color = mix(color, line, exp(-abs(height) * 90.0) * 0.8);
+
+            if (height < -0.0001) {
+              float distance = clamp((groundY - cameraPosition.y) / height, 0.0, 2000.0);
+              vec2 point = cameraPosition.xz + direction.xz * distance;
+              float fade = 1.0 - smoothstep(450.0, 1100.0, distance);
+              float minorLine = gridLine(point / 10.0);
+              float majorLine = gridLine(point / 50.0);
+              float alpha = max(minorLine * 0.5, majorLine * 0.9) * fade;
+              color = mix(color, mix(minor, major, majorLine), alpha);
+            }
+
+            gl_FragColor = vec4(color, 1.0);
+            #include <colorspace_fragment>
+          }
+        `,
+      }),
+    [],
+  )
+
+  useEffect(() => () => material.dispose(), [material])
+
+  // Keep the dome centred on the camera so the far plane never clips a hole in the sky.
+  useFrame(({ camera }) => {
+    mesh.current?.position.copy(camera.position)
+  })
+
+  return (
+    <mesh ref={mesh} material={material} renderOrder={-1} frustumCulled={false}>
+      <sphereGeometry args={[600, 32, 16]} />
+    </mesh>
   )
 }
 
@@ -315,7 +398,7 @@ function CornerLabels({
             <Html position={[0, 0.6, 0]} center zIndexRange={[8, 0]}>
               <span
                 aria-hidden="true"
-                className="pointer-events-none select-none rounded border border-zinc-700/60 bg-zinc-950/80 px-1 py-0.5 text-[8px] font-medium text-zinc-400"
+                className="pointer-events-none select-none rounded border border-zinc-700/60 bg-zinc-950/80 px-1.5 py-0.5 text-[9px] font-medium text-zinc-400"
               >
                 T{corner.n}
               </span>
@@ -406,6 +489,10 @@ function DriverMarker({
           document.body.style.cursor = 'auto'
         }}
       >
+        <sphereGeometry args={[0.7, 8, 8]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      <mesh>
         <sphereGeometry args={[0.23, 16, 16]} />
         <meshBasicMaterial
           color={color}
@@ -433,7 +520,10 @@ function DriverMarker({
         <div
           ref={label}
           aria-hidden="true"
-          className="pointer-events-none select-none whitespace-nowrap rounded border bg-zinc-950/85 px-1 py-0.5 text-[9px] font-semibold leading-none tracking-wide text-zinc-100 backdrop-blur-sm"
+          data-driver-marker={driver.code}
+          onClick={() => onSelect()}
+          title={`Select ${driver.code}`}
+          className="pointer-events-auto cursor-pointer select-none whitespace-nowrap rounded border bg-zinc-950/85 px-1.5 py-0.5 text-[10px] font-semibold leading-none tracking-wide text-zinc-100 backdrop-blur-sm"
           style={{ borderColor: color }}
         >
           {driver.code}
@@ -552,7 +642,7 @@ function EventBeacon({
       <Html position={[0, 2.2, 0]} center zIndexRange={[30, 0]}>
         <div
           aria-hidden="true"
-          className="pointer-events-none select-none whitespace-nowrap rounded border border-amber-500/40 bg-zinc-950/90 px-1.5 py-0.5 text-[8px] font-medium tracking-wide text-amber-300 backdrop-blur"
+          className="pointer-events-none select-none whitespace-nowrap rounded border border-amber-500/40 bg-zinc-950/90 px-2 py-0.5 text-[9px] font-medium tracking-wide text-amber-300 backdrop-blur"
         >
           {label}
         </div>

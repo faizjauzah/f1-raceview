@@ -75,7 +75,7 @@ export function Header({
         }}
       >
         <SelectTrigger
-          className="h-8 w-[150px] border-zinc-800 bg-zinc-950 text-xs sm:w-[250px]"
+          className="h-8 w-[124px] border-zinc-800 bg-zinc-950 text-xs sm:w-[250px]"
           aria-label="Select race"
         >
           <span className="truncate">
@@ -99,14 +99,14 @@ export function Header({
       <div className="ml-auto flex items-center gap-2">
         <Badge
           variant="outline"
-          className={`h-7 gap-1.5 rounded-full px-2 text-[10px] font-semibold tracking-wider sm:px-2.5 ${statusMeta.className}`}
+          className={`hidden h-7 gap-1.5 rounded-full px-2 text-[10px] font-semibold tracking-wider sm:inline-flex sm:px-2.5 ${statusMeta.className}`}
         >
           <span className={`size-1.5 rounded-full ${statusMeta.dot} animate-pulse`} />
           <span className="hidden sm:inline">{statusMeta.label}</span>
           <span className="sm:hidden">{statusMeta.short}</span>
         </Badge>
 
-        <div className="hidden items-center rounded-md border border-zinc-800 bg-zinc-950 p-0.5 sm:flex">
+        <div className="flex items-center rounded-md border border-zinc-800 bg-zinc-950 p-0.5">
           {CAMERAS.map(({ id, label, icon: Icon }) => (
             <Tooltip key={id}>
               <TooltipTrigger
@@ -114,7 +114,7 @@ export function Header({
                 onClick={() => onCameraChange(id)}
                 aria-label={label}
                 aria-pressed={cameraMode === id}
-                className={`flex size-7 items-center justify-center rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset ${
+                className={`flex size-8 items-center justify-center rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset sm:size-7 ${
                   cameraMode === id
                     ? 'bg-zinc-800 text-zinc-100'
                     : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'

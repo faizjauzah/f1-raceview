@@ -12,6 +12,10 @@ import type { RefObject } from 'react'
 
 type CameraMode = 'orbit' | 'top' | 'follow'
 
+function isDesktop() {
+  return window.matchMedia('(min-width: 1024px)').matches
+}
+
 const SHORTCUT_IGNORE =
   'input, textarea, select, a[href], [contenteditable="true"], [role="combobox"], [role="listbox"], [role="slider"], [role="switch"], [role="tab"], [role="menu"], [role="dialog"]'
 
@@ -19,6 +23,11 @@ function ignoresShortcuts(target: EventTarget | null) {
   if (!(target instanceof Element)) return false
   if (target instanceof HTMLElement && target.isContentEditable) return true
   return Boolean(target.closest(SHORTCUT_IGNORE))
+}
+
+function ignoresEnter(target: EventTarget | null) {
+  if (ignoresShortcuts(target)) return true
+  return target instanceof Element && Boolean(target.closest('button, summary'))
 }
 
 const MemoViewport = memo(RaceViewport)
@@ -66,6 +75,7 @@ function CollapsedSidebar({ label, side, onExpand, buttonRef }: CollapsedSidebar
       type="button"
       onClick={onExpand}
       aria-label={`Expand ${label.toLowerCase()}`}
+      aria-expanded={false}
       title={`Expand ${label.toLowerCase()}`}
       className="flex h-10 w-full items-center justify-between gap-2 px-3 text-[9px] font-medium uppercase tracking-[0.16em] text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset lg:h-full lg:flex-col lg:justify-between lg:px-0 lg:py-3"
     >
@@ -91,19 +101,33 @@ export default function App() {
   const [cameraMode, setCameraMode] = useState<CameraMode>('orbit')
   const [highlight, setHighlight] = useState<HighlightEvent | null>(null)
   const [timingOpen, setTimingOpen] = useState(true)
-  const [eventsOpen, setEventsOpen] = useState(true)
+  const [eventsOpen, setEventsOpen] = useState(isDesktop)
+  const previousCamera = useRef<CameraMode>('orbit')
   const timingToggleRef = useRef<HTMLButtonElement>(null)
   const eventsToggleRef = useRef<HTMLButtonElement>(null)
 
   const toggleTiming = useCallback(() => {
-    setTimingOpen((open) => !open)
+    const next = !timingOpen
+    setTimingOpen(next)
+    if (next && !isDesktop()) setEventsOpen(false)
     requestAnimationFrame(() => timingToggleRef.current?.focus())
-  }, [])
+  }, [timingOpen])
 
   const toggleEvents = useCallback(() => {
-    setEventsOpen((open) => !open)
+    const next = !eventsOpen
+    setEventsOpen(next)
+    if (next && !isDesktop()) setTimingOpen(false)
     requestAnimationFrame(() => eventsToggleRef.current?.focus())
-  }, [])
+  }, [eventsOpen])
+
+  const toggleFollow = useCallback(() => {
+    if (cameraMode === 'follow') {
+      setCameraMode(previousCamera.current)
+      return
+    }
+    previousCamera.current = cameraMode
+    setCameraMode('follow')
+  }, [cameraMode])
 
   useEffect(() => {
     let alive = true
@@ -158,9 +182,13 @@ export default function App() {
     setSelectedDriver((current) => (current === code ? null : code))
   }, [])
 
-  const handleCameraChange = useCallback((mode: CameraMode) => {
-    setCameraMode(mode)
-  }, [])
+  const handleCameraChange = useCallback(
+    (mode: CameraMode) => {
+      if (mode === 'follow' && cameraMode !== 'follow') previousCamera.current = cameraMode
+      setCameraMode(mode)
+    },
+    [cameraMode],
+  )
 
   const handleRaceChange = useCallback((id: string) => {
     setRaceId(id)
@@ -187,6 +215,14 @@ export default function App() {
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (ignoresShortcuts(event.target)) return
+
+      if (event.key === 'Enter') {
+        if (!ignoresEnter(event.target) && !event.repeat) {
+          event.preventDefault()
+          toggleFollow()
+        }
+        return
+      }
 
       if (event.key === ' ') {
         event.preventDefault()
@@ -255,7 +291,7 @@ export default function App() {
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [race, store, selectedDriver, highlight, events, handleSeekEvent])
+  }, [race, store, selectedDriver, highlight, events, handleSeekEvent, toggleFollow])
 
   const status = useMemo(() => (race ? statusAt(race, snapshot.time) : 1), [race, snapshot.time])
   const highlightKey = highlight ? `${highlight.kind}:${highlight.event.id}` : null
@@ -265,7 +301,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#09090b] text-zinc-100 lg:h-dvh lg:overflow-hidden">
+    <div className="flex h-dvh flex-col overflow-hidden bg-[#09090b] text-zinc-100">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:border focus:border-zinc-700 focus:bg-zinc-100 focus:px-3 focus:py-2 focus:text-xs focus:font-medium focus:text-zinc-950"
@@ -308,7 +344,7 @@ export default function App() {
         }}
         className="flex min-h-0 flex-1 flex-col outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-inset lg:grid lg:grid-rows-[minmax(0,1fr)]"
       >
-        <section className="order-1 h-[46vh] min-h-[320px] lg:col-start-2 lg:row-start-1 lg:h-auto lg:min-h-0">
+        <section className="order-1 min-h-[30dvh] flex-1 lg:col-start-2 lg:row-start-1 lg:min-h-0">
           <MemoViewport
             race={race}
             store={store}
@@ -325,7 +361,7 @@ export default function App() {
         <aside
           aria-label="Live timing"
           className={`order-2 flex min-h-0 flex-col border-t bg-zinc-950/50 lg:col-start-1 lg:row-start-1 lg:border-r lg:border-t-0 ${
-            timingOpen ? 'h-[420px] lg:h-auto' : 'h-auto'
+            timingOpen ? 'h-[45dvh] lg:h-auto' : 'h-auto shrink-0'
           }`}
         >
           {timingOpen ? (
@@ -350,7 +386,7 @@ export default function App() {
         <aside
           aria-label="Events"
           className={`order-3 flex min-h-0 flex-col border-t bg-zinc-950/50 lg:col-start-3 lg:row-start-1 lg:border-l lg:border-t-0 ${
-            eventsOpen ? 'h-[500px] lg:h-auto' : 'h-auto'
+            eventsOpen ? 'h-[45dvh] lg:h-auto' : 'h-auto shrink-0'
           }`}
         >
           {eventsOpen ? (
