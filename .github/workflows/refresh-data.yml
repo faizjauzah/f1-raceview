@@ -1,0 +1,55 @@
+name: Refresh race data
+
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: Season year
+        required: true
+        default: "2024"
+      races:
+        description: Comma-separated race names (e.g. Bahrain,Monaco,Spa)
+        required: true
+        default: "Bahrain,Monaco,Spa"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .cache/openf1
+            .cache/fastf1
+          key: race-data-${{ inputs.year }}-${{ hashFiles('scripts/requirements.txt') }}-${{ inputs.races }}
+
+      - run: pip install -r scripts/requirements.txt
+
+      - name: Export telemetry JSON
+        run: python scripts/export_race_data.py --year "${{ inputs.year }}" --races "${{ inputs.races }}"
+
+      - name: Commit refreshed data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          if git diff --cached --quiet; then
+            echo "Race data unchanged."
+            exit 0
+          fi
+          git commit -m "chore: refresh race data"
+          git pull --rebase origin main
+          git push

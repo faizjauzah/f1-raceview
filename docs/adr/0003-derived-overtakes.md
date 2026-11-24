@@ -1,0 +1,3 @@
+# Overtakes are derived from position events
+
+There is no official overtake feed. The exporter treats a one-place gain in the timing position stream as a candidate, then keeps it only when the displaced driver loses the matching place within six seconds, the drivers are on the same lap, both are outside pit windows, the track is green, and the pair has not already been recorded recently. Locations are snapped to the nearest circuit corner, with an approximate sector straight as fallback. This is deliberately a heuristic: race starts, restarts, penalties, and timing-feed quirks can still produce a few false or missed events, which the glossary and README call out.

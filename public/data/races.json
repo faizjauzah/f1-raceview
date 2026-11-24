@@ -1,0 +1,32 @@
+[
+  {
+    "id": "bahrain-2024",
+    "year": 2024,
+    "round": 1,
+    "name": "Bahrain Grand Prix",
+    "circuitName": "Sakhir",
+    "country": "Bahrain",
+    "totalLaps": 57,
+    "file": "bahrain-2024.json"
+  },
+  {
+    "id": "monaco-2024",
+    "year": 2024,
+    "round": 8,
+    "name": "Monaco Grand Prix",
+    "circuitName": "Monte Carlo",
+    "country": "Monaco",
+    "totalLaps": 78,
+    "file": "monaco-2024.json"
+  },
+  {
+    "id": "spa-2024",
+    "year": 2024,
+    "round": 14,
+    "name": "Belgian Grand Prix",
+    "circuitName": "Spa-Francorchamps",
+    "country": "Belgium",
+    "totalLaps": 44,
+    "file": "spa-2024.json"
+  }
+]

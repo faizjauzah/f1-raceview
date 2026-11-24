@@ -1,0 +1,3 @@
+# OpenF1 telemetry, FastF1 circuit metadata
+
+FastF1's timing endpoints now require an F1TV login, which makes a credential-free public build fragile. Telemetry therefore comes from OpenF1, which exposes the same 2023+ feed without authentication, while circuit corners and rotation still come from FastF1's anonymous MultiViewer source. The cost is a narrower catalogue (no pre-2023 races) and one more upstream service; the gain is a pipeline that works locally and in GitHub Actions with no secrets. FastF1 remains a dependency for the circuit metadata, so the two sources are normalised into one race schema.
