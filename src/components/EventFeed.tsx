@@ -1,21 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ListFilter, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
-import { formatEventTime, TYRES } from '@/lib/data'
-import type { Overtake, PitStop, RaceData } from '@/types'
+import { formatEventTime, raceEvents, TYRES } from '@/lib/data'
+import type { FeedItem, RaceData } from '@/types'
 
 type Filter = 'all' | 'overtake' | 'pit'
-
-type FeedItem =
-  | { kind: 'overtake'; id: string; time: number; lap: number; driver: string; other: string; label: string; position: number; raw: Overtake }
-  | { kind: 'pit'; id: string; time: number; lap: number; driver: string; raw: PitStop }
 
 type EventFeedProps = {
   race: RaceData
   selectedDriver: string | null
-  highlightId: string | null
+  highlightKey: string | null
   onSeekEvent: (item: FeedItem) => void
 }
 
@@ -44,38 +40,22 @@ function Compound({ name }: { name: string | null }) {
   )
 }
 
-export function EventFeed({ race, selectedDriver, highlightId, onSeekEvent }: EventFeedProps) {
+export function EventFeed({ race, selectedDriver, highlightKey, onSeekEvent }: EventFeedProps) {
   const [filter, setFilter] = useState<Filter>('all')
   const [selectedOnly, setSelectedOnly] = useState(false)
+  const itemRefs = useRef(new Map<string, HTMLButtonElement>())
   const colors = useMemo(
     () => new Map(race.drivers.map((driver) => [driver.code, driver.color])),
     [race.drivers],
   )
-  const all = useMemo<FeedItem[]>(
-    () =>
-      [
-        ...race.overtakes.map((event) => ({
-          kind: 'overtake' as const,
-          id: event.id,
-          time: event.raceTime,
-          lap: event.lap,
-          driver: event.overtakingDriver,
-          other: event.overtakenDriver,
-          label: event.locationLabel,
-          position: event.newPosition,
-          raw: event,
-        })),
-        ...race.pits.map((event) => ({
-          kind: 'pit' as const,
-          id: event.id,
-          time: event.raceTime,
-          lap: event.lap,
-          driver: event.driver,
-          raw: event,
-        })),
-      ].sort((a, b) => a.time - b.time),
-    [race.overtakes, race.pits],
-  )
+  const all = useMemo(() => raceEvents(race), [race])
+
+  useEffect(() => {
+    if (!highlightKey) return
+    const node = itemRefs.current.get(highlightKey)
+    node?.scrollIntoView({ block: 'nearest' })
+    node?.focus({ preventScroll: true })
+  }, [highlightKey])
 
   const items = all.filter((item) => {
     if (filter !== 'all' && item.kind !== filter) return false
@@ -99,6 +79,7 @@ export function EventFeed({ race, selectedDriver, highlightId, onSeekEvent }: Ev
             variant={filter === value ? 'secondary' : 'ghost'}
             size="sm"
             className="h-6 px-2 text-[9px] uppercase tracking-wider"
+            aria-pressed={filter === value}
             onClick={() => setFilter(value)}
           >
             {value === 'all' ? 'All' : value === 'overtake' ? 'Overtakes' : 'Pit stops'}
@@ -136,13 +117,30 @@ export function EventFeed({ race, selectedDriver, highlightId, onSeekEvent }: Ev
             </div>
           )}
           {items.map((item) => {
-            const active = highlightId === item.id
+            const key = `${item.kind}:${item.id}`
+            const active = highlightKey === key
             return (
               <button
-                key={`${item.kind}-${item.id}`}
+                key={key}
+                ref={(node) => {
+                  if (node) itemRefs.current.set(key, node)
+                  else itemRefs.current.delete(key)
+                }}
                 type="button"
                 onClick={() => onSeekEvent(item)}
-                className={`group w-full rounded-md border px-2.5 py-2 text-left transition-colors ${
+                onKeyDown={(event) => {
+                  if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+                  event.preventDefault()
+                  event.stopPropagation()
+                  const index = items.findIndex(
+                    (candidate) => candidate.kind === item.kind && candidate.id === item.id,
+                  )
+                  const direction = event.key === 'ArrowDown' ? 1 : -1
+                  const next = items[(index + direction + items.length) % items.length]
+                  if (next) onSeekEvent(next)
+                }}
+                aria-current={active ? 'true' : undefined}
+                className={`group w-full rounded-md border px-2.5 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset ${
                   active
                     ? 'border-amber-500/40 bg-amber-500/5'
                     : 'border-transparent bg-zinc-900/40 hover:border-zinc-800 hover:bg-zinc-900'

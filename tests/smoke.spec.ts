@@ -12,8 +12,32 @@ test('loads, plays, and seeks to an event without runtime errors', async ({ page
   await expect(page.locator('canvas')).toBeVisible()
   await expect(page.getByText('VER', { exact: true }).first()).toBeVisible()
 
+  await page.keyboard.press('Tab')
+  const skipLink = page.getByRole('link', { name: 'Skip to content' })
+  await expect(skipLink).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(page.locator('#main')).toBeFocused()
+
+  const viewport = page.getByRole('region', { name: /3D race track/ })
+  await viewport.focus()
+  await expect(viewport).toBeFocused()
+  await page.keyboard.press('Space')
+  await expect(page.getByRole('button', { name: 'Pause replay' })).toBeVisible()
+  await page.keyboard.press('Space')
+  await expect(page.getByRole('button', { name: 'Play replay' })).toBeVisible()
+
+  await page.keyboard.press('ArrowDown')
+  await expect(page.getByTestId('a11y-status')).toContainText('Driver VER selected')
+  await page.keyboard.press('ArrowRight')
+  await expect(page.getByTestId('a11y-status')).toContainText('Overtake on lap')
+  await expect(page.getByText('Selected driver only')).toBeVisible()
+
   await page.getByRole('button', { name: 'Play replay' }).click()
-  await page.waitForTimeout(1200)
+  await page.waitForTimeout(600)
+  await expect(page.getByRole('button', { name: 'Pause replay' })).toBeVisible()
+  await page.keyboard.press('Space')
+  await expect(page.getByRole('button', { name: 'Play replay' })).toBeVisible()
+  await page.keyboard.press('Space')
   await expect(page.getByRole('button', { name: 'Pause replay' })).toBeVisible()
   await page.getByRole('button', { name: 'Pause replay' }).click()
 
@@ -47,6 +71,22 @@ test('loads, plays, and seeks to an event without runtime errors', async ({ page
   await expect(page.getByText('Live timing')).toBeVisible()
   await page.screenshot({ path: 'test-results/raceview-timing.png', fullPage: true })
   expect(errors).toEqual([])
+})
+
+test('driver and event lists support arrow keys', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByText('VER', { exact: true }).first()).toBeVisible()
+
+  const verRow = page.getByRole('button', { name: /VER/ }).first()
+  await verRow.focus()
+  await page.keyboard.press('ArrowDown')
+  await expect(page.getByTestId('a11y-status')).toContainText('Driver LEC selected')
+
+  await page.getByRole('tab', { name: /Events/ }).click()
+  const firstEvent = page.locator('button').filter({ hasText: / passed / }).first()
+  await firstEvent.focus()
+  await page.keyboard.press('ArrowDown')
+  await expect(page.getByTestId('a11y-status')).toContainText('Driver PER selected')
 })
 
 test('switches race and loads Monaco', async ({ page }) => {

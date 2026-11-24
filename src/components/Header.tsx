@@ -45,9 +45,9 @@ export function Header({
         </div>
         <div className="min-w-0 leading-none">
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-semibold tracking-[0.22em] text-zinc-100">
+            <h1 className="text-[13px] font-semibold tracking-[0.22em] text-zinc-100">
               RACEVIEW
-            </span>
+            </h1>
             <span className="hidden rounded border border-zinc-800 px-1 py-0.5 text-[8px] tracking-widest text-zinc-500 sm:inline">
               REPLAY
             </span>
@@ -101,7 +101,7 @@ export function Header({
                 onClick={() => onCameraChange(id)}
                 aria-label={label}
                 aria-pressed={cameraMode === id}
-                className={`flex size-7 items-center justify-center rounded transition-colors ${
+                className={`flex size-7 items-center justify-center rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset ${
                   cameraMode === id
                     ? 'bg-zinc-800 text-zinc-100'
                     : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'

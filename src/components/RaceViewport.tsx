@@ -37,8 +37,16 @@ export function RaceViewport({
   const statusMeta = STATUSES[status] ?? STATUSES[1]
 
   return (
-    <div className="relative h-full min-h-[320px] w-full overflow-hidden bg-[#09090b]">
+    <div
+      role="region"
+      aria-label="3D race track. Space plays or pauses. Arrow up and down change the selected driver. Arrow left and right change the selected event."
+      aria-keyshortcuts="Space ArrowUp ArrowDown ArrowLeft ArrowRight"
+      tabIndex={0}
+      onPointerDown={(event) => event.currentTarget.focus({ preventScroll: true })}
+      className="relative h-full min-h-[320px] w-full overflow-hidden bg-[#09090b] outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-inset"
+    >
       <Canvas
+        aria-hidden="true"
         camera={{ position: [0, 72, 108], fov: 42, near: 0.1, far: 700 }}
         dpr={[1, 2]}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
@@ -99,7 +107,13 @@ export function RaceViewport({
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3 sm:p-4">
         <div className="rounded border border-zinc-800/60 bg-zinc-950/60 px-2 py-1 text-[9px] text-zinc-500 backdrop-blur">
-          Drag to orbit · scroll to zoom
+          <div>Drag to orbit · scroll to zoom</div>
+          <div className="mt-0.5 hidden text-[9px] text-zinc-500 sm:block">
+            Space play/pause · ↑↓ driver · ←→ event
+          </div>
+          <div className="hidden text-[9px] text-zinc-500 sm:block">
+            Enter activates the focused control
+          </div>
         </div>
         <div className="hidden items-center gap-3 text-[9px] text-zinc-500 sm:flex">
           {race.track.corners.length} turns · {race.drivers.length} drivers
@@ -294,7 +308,10 @@ function CornerLabels({
               <meshBasicMaterial color="#52525b" transparent opacity={0.7} />
             </mesh>
             <Html position={[0, 0.6, 0]} center zIndexRange={[8, 0]}>
-              <span className="pointer-events-none select-none rounded border border-zinc-700/60 bg-zinc-950/80 px-1 py-0.5 text-[8px] font-medium text-zinc-400">
+              <span
+                aria-hidden="true"
+                className="pointer-events-none select-none rounded border border-zinc-700/60 bg-zinc-950/80 px-1 py-0.5 text-[8px] font-medium text-zinc-400"
+              >
                 T{corner.n}
               </span>
             </Html>
@@ -410,6 +427,7 @@ function DriverMarker({
       <Html position={[0, 0.95, 0]} center zIndexRange={[20, 0]}>
         <div
           ref={label}
+          aria-hidden="true"
           className="pointer-events-none select-none whitespace-nowrap rounded border bg-zinc-950/85 px-1 py-0.5 text-[9px] font-semibold leading-none tracking-wide text-zinc-100 backdrop-blur-sm"
           style={{ borderColor: color }}
         >
@@ -527,7 +545,10 @@ function EventBeacon({
         <meshBasicMaterial color="#f59e0b" transparent opacity={0.25} depthWrite={false} />
       </mesh>
       <Html position={[0, 2.2, 0]} center zIndexRange={[30, 0]}>
-        <div className="pointer-events-none select-none whitespace-nowrap rounded border border-amber-500/40 bg-zinc-950/90 px-1.5 py-0.5 text-[8px] font-medium tracking-wide text-amber-300 backdrop-blur">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none select-none whitespace-nowrap rounded border border-amber-500/40 bg-zinc-950/90 px-1.5 py-0.5 text-[8px] font-medium tracking-wide text-amber-300 backdrop-blur"
+        >
           {label}
         </div>
       </Html>

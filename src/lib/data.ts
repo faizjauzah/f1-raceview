@@ -1,4 +1,4 @@
-import type { DriverData, RaceData, RaceMeta } from '@/types'
+import type { DriverData, FeedItem, RaceData, RaceMeta } from '@/types'
 
 const BASE = import.meta.env.BASE_URL
 const raceCache = new Map<string, Promise<RaceData>>()
@@ -49,6 +49,30 @@ export function statusAt(race: RaceData, time: number) {
     if (time >= interval.start && time < interval.end) return interval.status
   }
   return 1
+}
+
+export function raceEvents(race: RaceData): FeedItem[] {
+  return [
+    ...race.overtakes.map((event) => ({
+      kind: 'overtake' as const,
+      id: event.id,
+      time: event.raceTime,
+      lap: event.lap,
+      driver: event.overtakingDriver,
+      other: event.overtakenDriver,
+      label: event.locationLabel,
+      position: event.newPosition,
+      raw: event,
+    })),
+    ...race.pits.map((event) => ({
+      kind: 'pit' as const,
+      id: event.id,
+      time: event.raceTime,
+      lap: event.lap,
+      driver: event.driver,
+      raw: event,
+    })),
+  ].sort((a, b) => a.time - b.time)
 }
 
 export function isActive(driver: DriverData, time: number) {

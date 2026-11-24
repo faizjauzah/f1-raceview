@@ -58,6 +58,7 @@ export function PlaybackBar({ race, store, snapshot }: PlaybackBarProps) {
             className="size-9 rounded-full"
             onClick={() => store.toggle()}
             aria-label={snapshot.playing ? 'Pause replay' : 'Play replay'}
+            aria-keyshortcuts="Space"
           >
             {snapshot.playing ? <Pause className="size-4" /> : <Play className="size-4 pl-0.5" />}
           </Button>

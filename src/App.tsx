@@ -6,24 +6,20 @@ import { PlaybackBar } from '@/components/PlaybackBar'
 import { RaceViewport } from '@/components/RaceViewport'
 import { TimingTower } from '@/components/TimingTower'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { loadRace, loadRaces, statusAt } from '@/lib/data'
+import { loadRace, loadRaces, raceEvents, STATUSES, statusAt } from '@/lib/data'
 import { usePlayback, usePlaybackSnapshot } from '@/lib/playback'
-import type { HighlightEvent, Overtake, PitStop, RaceData, RaceMeta } from '@/types'
+import type { FeedItem, HighlightEvent, RaceData, RaceMeta } from '@/types'
 
 type CameraMode = 'orbit' | 'top' | 'follow'
-type FeedItem =
-  | {
-      kind: 'overtake'
-      id: string
-      time: number
-      lap: number
-      driver: string
-      other: string
-      label: string
-      position: number
-      raw: Overtake
-    }
-  | { kind: 'pit'; id: string; time: number; lap: number; driver: string; raw: PitStop }
+
+const SHORTCUT_IGNORE =
+  'input, textarea, select, a[href], [contenteditable="true"], [role="combobox"], [role="listbox"], [role="slider"], [role="switch"], [role="tab"], [role="menu"], [role="dialog"]'
+
+function ignoresShortcuts(target: EventTarget | null) {
+  if (!(target instanceof Element)) return false
+  if (target instanceof HTMLElement && target.isContentEditable) return true
+  return Boolean(target.closest(SHORTCUT_IGNORE))
+}
 
 const MemoViewport = memo(RaceViewport)
 const MemoHeader = memo(Header)
@@ -67,6 +63,7 @@ export default function App() {
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null)
   const [cameraMode, setCameraMode] = useState<CameraMode>('orbit')
   const [highlight, setHighlight] = useState<HighlightEvent | null>(null)
+  const [activeTab, setActiveTab] = useState('timing')
 
   useEffect(() => {
     let alive = true
@@ -139,18 +136,100 @@ export default function App() {
     setRaceId(id)
   }, [])
 
-  const handleSeekEvent = useCallback((item: FeedItem) => {
-    store.pause()
-    store.seek(Math.max(0, item.time - 3))
-    setSelectedDriver(item.driver)
-    setHighlight(
-      item.kind === 'overtake'
-        ? { kind: 'overtake', event: item.raw }
-        : { kind: 'pit', event: item.raw },
-    )
-  }, [store])
+  const handleSeekEvent = useCallback(
+    (item: FeedItem) => {
+      store.pause()
+      store.seek(Math.max(0, item.time - 3))
+      setSelectedDriver(item.driver)
+      setHighlight(
+        item.kind === 'overtake'
+          ? { kind: 'overtake', event: item.raw }
+          : { kind: 'pit', event: item.raw },
+      )
+      setActiveTab('events')
+    },
+    [store],
+  )
+
+  const events = useMemo(() => (race ? raceEvents(race) : []), [race])
+
+  useEffect(() => {
+    if (!race) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (ignoresShortcuts(event.target)) return
+
+      if (event.key === ' ') {
+        event.preventDefault()
+        if (!event.repeat) store.toggle()
+        return
+      }
+
+      if (
+        event.key !== 'ArrowUp' &&
+        event.key !== 'ArrowDown' &&
+        event.key !== 'ArrowLeft' &&
+        event.key !== 'ArrowRight'
+      ) {
+        if (event.key === 'Escape') {
+          setSelectedDriver(null)
+          setHighlight(null)
+        }
+        return
+      }
+
+      event.preventDefault()
+
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        const index = Math.max(
+          0,
+          Math.min(race.time.count - 1, Math.floor(store.time / race.time.step)),
+        )
+        const order = [...race.drivers].sort((a, b) => a.pos[index] - b.pos[index])
+        const current = order.findIndex((driver) => driver.code === selectedDriver)
+        const direction = event.key === 'ArrowDown' ? 1 : -1
+        const next =
+          current < 0
+            ? direction > 0
+              ? 0
+              : order.length - 1
+            : (current + direction + order.length) % order.length
+        setSelectedDriver(order[next].code)
+        return
+      }
+
+      if (events.length === 0) return
+      const direction = event.key === 'ArrowRight' ? 1 : -1
+      const current = highlight
+        ? events.findIndex(
+            (item) => item.kind === highlight.kind && item.id === highlight.event.id,
+          )
+        : -1
+      let next = -1
+      if (current >= 0) {
+        next = (current + direction + events.length) % events.length
+      } else if (direction > 0) {
+        next = events.findIndex((item) => item.time >= store.time)
+        if (next < 0) next = 0
+      } else {
+        for (let index = events.length - 1; index >= 0; index -= 1) {
+          if (events[index].time <= store.time) {
+            next = index
+            break
+          }
+        }
+        if (next < 0) next = events.length - 1
+      }
+      const item = events[next]
+      if (item) handleSeekEvent(item)
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [race, store, selectedDriver, highlight, events, handleSeekEvent])
 
   const status = useMemo(() => (race ? statusAt(race, snapshot.time) : 1), [race, snapshot.time])
+  const highlightKey = highlight ? `${highlight.kind}:${highlight.event.id}` : null
 
   if (!race) {
     return <FullScreenLoader error={error} />
@@ -158,6 +237,28 @@ export default function App() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#09090b] text-zinc-100 lg:h-dvh lg:overflow-hidden">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:border focus:border-zinc-700 focus:bg-zinc-100 focus:px-3 focus:py-2 focus:text-xs focus:font-medium focus:text-zinc-950"
+      >
+        Skip to content
+      </a>
+      <div
+        data-testid="a11y-status"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {`${(STATUSES[status] ?? STATUSES[1]).label}. `}
+        {selectedDriver ? `Driver ${selectedDriver} selected. ` : 'No driver selected. '}
+        {highlight
+          ? highlight.kind === 'overtake'
+            ? `Overtake on lap ${highlight.event.lap} at ${highlight.event.locationLabel}.`
+            : `Pit stop on lap ${highlight.event.lap}.`
+          : ''}
+      </div>
+
       <MemoHeader
         races={races}
         raceId={raceId}
@@ -167,7 +268,12 @@ export default function App() {
         onCameraChange={handleCameraChange}
       />
 
-      <main className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_380px]">
+      <main
+        id="main"
+        tabIndex={-1}
+        aria-label="Race replay"
+        className="flex min-h-0 flex-1 flex-col outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-inset lg:grid lg:grid-cols-[minmax(0,1fr)_380px]"
+      >
         <section className="h-[46vh] min-h-[320px] lg:h-auto lg:min-h-0">
           <MemoViewport
             race={race}
@@ -183,7 +289,11 @@ export default function App() {
         </section>
 
         <aside className="flex min-h-0 flex-1 flex-col border-t bg-zinc-950/50 lg:border-l lg:border-t-0">
-          <Tabs defaultValue="timing" className="flex min-h-0 flex-1 flex-col gap-0">
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => setActiveTab(String(value))}
+            className="flex min-h-0 flex-1 flex-col gap-0"
+          >
             <div className="shrink-0 p-2.5 pb-0">
               <TabsList className="grid w-full grid-cols-2 bg-zinc-900/60">
                 <TabsTrigger value="timing" className="text-[10px] uppercase tracking-[0.14em]">
@@ -209,7 +319,7 @@ export default function App() {
               <MemoFeed
                 race={race}
                 selectedDriver={selectedDriver}
-                highlightId={highlight?.event.id ?? null}
+                highlightKey={highlightKey}
                 onSeekEvent={handleSeekEvent}
               />
             </TabsContent>

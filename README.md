@@ -14,6 +14,7 @@ A zero-backend Formula 1 race replay and telemetry visualiser. Pre-processed rac
 - Overtake and pit-stop feed with filters, selected-driver filtering, and click-to-seek to three seconds before the event.
 - Track status badge and timeline bands for green, yellow, safety car, VSC, and red flag intervals.
 - Playback speed from 1× to 20×, −5 s / +5 s stepping, and a full-width scrubber with event ticks.
+- Full keyboard control: Space play/pause, arrow-key driver and event navigation, focus-visible rings, a skip link, and live status announcements.
 - Three real 2024 races out of the box: Bahrain, Monaco, and Spa-Francorchamps.
 
 ## Stack
@@ -28,6 +29,17 @@ npm run dev
 ```
 
 Race JSON is committed in `public/data/`, so no Python step is needed to run the app.
+
+## Keyboard
+
+- **Space** — play or pause. This is global, except while a select, slider, switch, tab, link, or text field is focused, where the control keeps its native Space behaviour.
+- **↑ / ↓** — previous or next driver in the running order. Inside the timing tower the focus moves with the selection.
+- **← / →** — previous or next overtake or pit event. The replay seeks to three seconds before it, opens the Events tab, and focuses the event card.
+- **Enter** — activate the focused button, tab, or link. Use this for buttons because Space is reserved for playback.
+- **Escape** — clear the selected driver and pinned event.
+- **Tab** — move through the skip link, race selector, camera presets, 3D viewport, timing tower, event feed, and playback controls.
+
+The 3D viewport is focusable and labelled, the timing tower and event feed use focus-visible rings, and a polite live region announces the track status, selected driver, and pinned event.
 
 ## Data pipeline
 
@@ -64,7 +76,7 @@ npx playwright install chromium   # once
 npm run test:e2e
 ```
 
-`test:e2e` builds the app, starts `vite preview`, checks playback, camera switching, event seeking, race switching, and fails on console or page errors.
+`test:e2e` builds the app, starts `vite preview`, checks playback, keyboard shortcuts, list navigation, camera switching, event seeking, race switching, and fails on console or page errors.
 
 ## Deploy to GitHub Pages
 

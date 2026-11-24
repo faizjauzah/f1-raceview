@@ -14,10 +14,10 @@ type TimingTowerProps = {
 export function TimingTower({ race, time, selectedDriver, onSelectDriver }: TimingTowerProps) {
   const index = indexAt(time, race.time.step, race.time.count)
   const previous = indexAt(Math.max(0, time - 10), race.time.step, race.time.count)
-  const selectedRef = useRef<HTMLButtonElement>(null)
+  const rowRefs = useRef(new Map<string, HTMLButtonElement>())
 
   useEffect(() => {
-    selectedRef.current?.scrollIntoView({ block: 'nearest' })
+    if (selectedDriver) rowRefs.current.get(selectedDriver)?.scrollIntoView({ block: 'nearest' })
   }, [selectedDriver])
 
   const rows = race.drivers
@@ -52,11 +52,31 @@ export function TimingTower({ race, time, selectedDriver, onSelectDriver }: Timi
             return (
               <button
                 key={driver.code}
-                ref={selected ? selectedRef : undefined}
+                ref={(node) => {
+                  if (node) rowRefs.current.set(driver.code, node)
+                  else rowRefs.current.delete(driver.code)
+                }}
                 type="button"
                 onClick={() => onSelectDriver(driver.code)}
+                onKeyDown={(event) => {
+                  if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+                  event.preventDefault()
+                  event.stopPropagation()
+                  const current = rows.findIndex((row) => row.driver.code === driver.code)
+                  const direction = event.key === 'ArrowDown' ? 1 : -1
+                  const next =
+                    current < 0
+                      ? direction > 0
+                        ? 0
+                        : rows.length - 1
+                      : (current + direction + rows.length) % rows.length
+                  const target = rows[next]
+                  if (!target) return
+                  onSelectDriver(target.driver.code)
+                  rowRefs.current.get(target.driver.code)?.focus()
+                }}
                 aria-pressed={selected}
-                className={`group relative grid w-full grid-cols-[34px_1fr_44px_38px_52px] items-center gap-1 rounded-md px-2 py-1.5 text-left transition-colors ${
+                className={`group relative grid w-full grid-cols-[34px_1fr_44px_38px_52px] items-center gap-1 rounded-md px-2 py-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset ${
                   selected
                     ? 'bg-zinc-800/70 ring-1 ring-zinc-700'
                     : 'hover:bg-zinc-900/80'

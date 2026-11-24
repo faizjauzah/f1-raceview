@@ -93,3 +93,24 @@ export type RaceData = {
 export type HighlightEvent =
   | { kind: 'overtake'; event: Overtake }
   | { kind: 'pit'; event: PitStop }
+
+export type FeedItem =
+  | {
+      kind: 'overtake'
+      id: string
+      time: number
+      lap: number
+      driver: string
+      other: string
+      label: string
+      position: number
+      raw: Overtake
+    }
+  | {
+      kind: 'pit'
+      id: string
+      time: number
+      lap: number
+      driver: string
+      raw: PitStop
+    }
