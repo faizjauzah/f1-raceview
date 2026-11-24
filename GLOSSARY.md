@@ -6,13 +6,23 @@ The shared language for a static Formula 1 race replay. A race is a pre-baked se
 
 **Race window**: The interval from the winner's start to the winner's chequered flag. Every race clock value is relative to the start of this window.
 
-**Frame**: One second of race time containing every driver's position, lap, race position, and tyre. The client interpolates between frames; a frame is not a rendered video frame.
+**Frame**: One second of race time containing every driver's position, lap, race position, tyre, and car telemetry. The client interpolates between frames; a frame is not a rendered video frame.
 
 **Playback time**: The current offset from the start of the race window, in seconds. It is independent of wall-clock time.
+
+**Playback speed**: How fast race time advances relative to wall-clock time, from 1× to 20×.
+_Avoid_: speed
 
 **Track status**: The marshalling state at a point in the race window: green, yellow, safety car, virtual safety car, or red flag.
 
 **Race position**: A driver's official place in the running order, from 1 to 20. The replay uses the timing feed, not a recomputation from geometry.
+
+## Telemetry
+
+**Car telemetry**: The followed car's one-second engine and control samples: car speed, gear, throttle, brake, and DRS state.
+
+**Car speed**: The car's velocity in km/h at the current playback time, as reported by the car feed; not the playback rate.
+_Avoid_: speed (alone), velocity
 
 ## Events
 

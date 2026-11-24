@@ -8,6 +8,7 @@ for the data feed.
 
 Usage:
     python scripts/export_race_data.py --year 2024 --races "Bahrain,Monaco,Spa"
+    python scripts/export_race_data.py --year 2025 --races all
 """
 
 from __future__ import annotations
@@ -177,6 +178,13 @@ def build_lap_arrays(
             continue
         idx = np.searchsorted(starts, times, side="right") - 1
         lap_values = np.where(idx >= 0, numbers[np.clip(idx, 0, None)], numbers[0])
+        if starts[0] > 10 and numbers[0] > 1:
+            # shortcut: OpenF1 can omit early lap rows (2025 Miami begins at lap
+            # 26); ramp the lap counter across the gap. Upgrade if the feed
+            # publishes the missing laps.
+            before = times < starts[0]
+            ramp = 1 + (times[before] / starts[0]) * (numbers[0] - 1)
+            lap_values[before] = np.clip(np.floor(ramp), 1, numbers[0] - 1)
         result[driver] = lap_values.astype(int).tolist()
     return result
 
@@ -272,15 +280,31 @@ def interpolate_location(
 ) -> tuple[list[int], list[int], list[int], float, float]:
     window_start = -10.0
     window_end = float(times[-1]) + 10.0
+    all_samples = sorted(
+        (
+            (seconds_between(row["date"], t0), row["x"], row["y"], row["z"])
+            for row in rows
+            if not (row["x"] == 0 and row["y"] == 0 and row["z"] == 0)
+        ),
+        key=lambda sample: sample[0],
+    )
     samples = [
-        (seconds_between(row["date"], t0), row["x"], row["y"], row["z"])
-        for row in rows
-        if not (row["x"] == 0 and row["y"] == 0 and row["z"] == 0)
-        and window_start <= seconds_between(row["date"], t0) <= window_end
+        sample for sample in all_samples if window_start <= sample[0] <= window_end
     ]
-    samples.sort()
     if not samples:
-        raise RuntimeError("Driver has no valid location samples")
+        # Drivers who retired before the start (DNS or a formation-lap crash)
+        # have no in-window samples. Hold their last known position so the
+        # driver still appears in the payload and disappears via `last`.
+        before = [sample for sample in all_samples if sample[0] < window_start]
+        after = [sample for sample in all_samples if sample[0] > window_end]
+        anchor = (
+            max(before, key=lambda sample: sample[0])
+            if before
+            else (min(after, key=lambda sample: sample[0]) if after else None)
+        )
+        if anchor is None:
+            raise RuntimeError("Driver has no valid location samples")
+        samples = [anchor]
     ts = np.array([sample[0] for sample in samples])
     xs = np.array([sample[1] for sample in samples])
     ys = np.array([sample[2] for sample in samples])
@@ -295,6 +319,73 @@ def interpolate_location(
         float(ts[0]),
         float(ts[-1]),
     )
+
+
+CAR_MAX_GAP = 2.0
+CAR_FIELDS = {
+    "speed": ("speed", 0, 400),
+    "gear": ("n_gear", 0, 8),
+    "throttle": ("throttle", 0, 100),
+    "brake": ("brake", 0, 100),
+    "drs": ("drs", 0, 14),
+}
+CAR_LINEAR = {"speed", "throttle", "brake"}
+
+
+def resample_car_field(
+    samples: list[tuple[float, int]], times: np.ndarray, linear: bool
+) -> list[int | None]:
+    if not samples:
+        return [None] * len(times)
+    ts = np.array([sample[0] for sample in samples])
+    values = np.array([sample[1] for sample in samples])
+    result: list[int | None] = []
+    for t in times:
+        if t < ts[0] or t > ts[-1]:
+            result.append(None)
+            continue
+        index = int(np.searchsorted(ts, t, side="right") - 1)
+        index = max(0, min(len(ts) - 1, index))
+        if linear and index + 1 < len(ts):
+            gap = float(ts[index + 1] - ts[index])
+            if 0 < gap <= CAR_MAX_GAP:
+                fraction = float((t - ts[index]) / gap)
+                value = values[index] + (values[index + 1] - values[index]) * fraction
+                result.append(int(round(float(value))))
+                continue
+        result.append(int(values[index]))
+    return result
+
+
+def build_car_arrays(
+    rows: list[dict[str, Any]], t0: datetime, duration: int
+) -> dict[str, list[int | None]] | None:
+    """Resample the car feed onto the replay frames.
+
+    OpenF1 uses 104 as a no-data sentinel for throttle/brake, and occasionally
+    emits corrupt gear values. Those samples become null rather than fake data.
+    A driver with no usable running telemetry gets no car arrays at all.
+    """
+    if not rows:
+        return None
+    prepared = sorted(
+        ((seconds_between(row["date"], t0), row) for row in rows),
+        key=lambda item: item[0],
+    )
+    times = np.arange(duration + 1, dtype=float)
+    arrays: dict[str, list[int | None]] = {}
+    for field, (source, low, high) in CAR_FIELDS.items():
+        samples = [
+            (t, int(row[source]))
+            for t, row in prepared
+            if row.get(source) is not None and low <= int(row[source]) <= high
+        ]
+        arrays[field] = resample_car_field(samples, times, field in CAR_LINEAR)
+    if not any(value is not None for value in arrays["speed"]):
+        return None
+    if not any(value is not None for value in arrays["throttle"] + arrays["brake"]):
+        return None
+    return arrays
 
 
 def track_from_lap(rows: list[dict[str, Any]], lap_start: str, lap_duration: float) -> list[list[int]]:
@@ -639,11 +730,16 @@ def export_race(
     race_control = client.get("/v1/race_control", {"session_key": session_key})
     results = client.get("/v1/session_result", {"session_key": session_key})
     result_info = {row["driver_number"]: row for row in results}
-    dnf = {row["driver_number"]: bool(row.get("dnf")) for row in results}
+    dnf = {
+        row["driver_number"]: bool(row.get("dnf") or row.get("dns"))
+        for row in results
+    }
 
     driver_numbers = sorted(
         {row["driver_number"] for row in drivers_rows},
     )
+    for driver in driver_numbers:
+        dnf.setdefault(driver, True)
     codes = {row["driver_number"]: row.get("name_acronym") or str(row["driver_number"]) for row in drivers_rows}
     teams = {
         row["driver_number"]: {
@@ -657,9 +753,10 @@ def export_race(
     start_times = [parse_iso(lap["date_start"]) for lap in laps if lap.get("date_start")]
     if not start_times:
         raise RuntimeError(f"No lap timings for {info.id}")
-    t0 = min(start_times)
+    lap_start = min(start_times)
     total_laps = max(
-        (lap["lap_number"] for lap in laps if lap.get("lap_number") is not None), default=0
+        (lap["lap_number"] for lap in laps if lap.get("lap_duration") is not None),
+        default=0,
     )
     finishers = [
         parse_iso(lap["date_start"]) + timedelta(seconds=lap["lap_duration"])
@@ -671,10 +768,25 @@ def export_race(
     if not finishers:
         raise RuntimeError(f"No finishing lap for {info.id}")
     t_end = min(finishers)
+    winner = next((row for row in results if row.get("position") == 1), None)
+    winner_duration = winner.get("duration") if winner else None
+    t0 = lap_start
+    if isinstance(winner_duration, (int, float)) and winner_duration > 0:
+        # OpenF1 occasionally omits the early lap rows (2025 Miami starts at
+        # lap 26), so the earliest lap start is not the race start. The winner's
+        # official duration recovers the real start.
+        candidate = t_end - timedelta(seconds=float(winner_duration))
+        if candidate < t0 - timedelta(seconds=30):
+            t0 = candidate
     duration = int(math.ceil((t_end - t0).total_seconds()))
     log(f"window {t0.isoformat()} + {duration}s, {len(driver_numbers)} drivers")
 
-    lap_arrays = build_lap_arrays(laps, t0, duration, driver_numbers)
+    lap_arrays = build_lap_arrays(
+        [lap for lap in laps if (lap.get("lap_number") or 0) <= total_laps],
+        t0,
+        duration,
+        driver_numbers,
+    )
     tyre_arrays = build_tyre_arrays(stints, lap_arrays, driver_numbers)
     pos_arrays = position_arrays(positions, t0, duration, driver_numbers)
 
@@ -682,15 +794,36 @@ def export_race(
     location: dict[int, dict[str, Any]] = {}
     for index, driver in enumerate(driver_numbers, start=1):
         log(f"  location {index:02d}/{len(driver_numbers)}: {codes[driver]}")
-        rows = client.get(
-            "/v1/location",
-            {
-                "session_key": session_key,
-                "driver_number": driver,
-            },
-        )
-        x, y, z, first, last = interpolate_location(rows, t0, times)
+        try:
+            rows = client.get(
+                "/v1/location",
+                {
+                    "session_key": session_key,
+                    "driver_number": driver,
+                },
+            )
+            x, y, z, first, last = interpolate_location(rows, t0, times)
+        except (requests.HTTPError, RuntimeError) as reason:
+            log(f"  no location for {codes[driver]}: {reason}")
+            dnf[driver] = True
+            x = [0] * (duration + 1)
+            y = [0] * (duration + 1)
+            z = [0] * (duration + 1)
+            first, last = 0.0, -1.0
         location[driver] = {"x": x, "y": y, "z": z, "first": first, "last": last}
+
+    car_arrays: dict[int, dict[str, list[int | None]] | None] = {}
+    for index, driver in enumerate(driver_numbers, start=1):
+        log(f"  car data {index:02d}/{len(driver_numbers)}: {codes[driver]}")
+        try:
+            rows = client.get(
+                "/v1/car_data",
+                {"session_key": session_key, "driver_number": driver},
+            )
+            car_arrays[driver] = build_car_arrays(rows, t0, duration)
+        except requests.HTTPError as reason:
+            log(f"  car data unavailable for {codes[driver]}: {reason}")
+            car_arrays[driver] = None
 
     fastest = min(
         (lap for lap in laps if lap.get("lap_duration") and lap["driver_number"] in location),
@@ -748,24 +881,26 @@ def export_race(
                 last = min(float(duration), max(0.0, (ending - t0).total_seconds()))
         else:
             last = float(duration)
-        driver_payload.append(
-            {
-                "code": codes[driver],
-                "number": driver,
-                "name": meta["name"],
-                "team": meta["team"],
-                "color": meta["color"],
-                "dnf": dnf.get(driver, False),
-                "first": round(first, 2),
-                "last": round(last, 2),
-                "x": location[driver]["x"],
-                "y": location[driver]["y"],
-                "z": location[driver]["z"],
-                "lap": lap_arrays[driver],
-                "pos": pos_arrays[driver],
-                "tyre": tyre_arrays[driver],
-            }
-        )
+        payload = {
+            "code": codes[driver],
+            "number": driver,
+            "name": meta["name"],
+            "team": meta["team"],
+            "color": meta["color"],
+            "dnf": dnf.get(driver, False),
+            "first": round(first, 2),
+            "last": round(last, 2),
+            "x": location[driver]["x"],
+            "y": location[driver]["y"],
+            "z": location[driver]["z"],
+            "lap": lap_arrays[driver],
+            "pos": pos_arrays[driver],
+            "tyre": tyre_arrays[driver],
+        }
+        car = car_arrays.get(driver)
+        if car:
+            payload.update(car)
+        driver_payload.append(payload)
 
     meta = {
         "id": info.id,
@@ -779,7 +914,7 @@ def export_race(
     }
 
     return {
-        "version": 1,
+        "version": 2,
         "meta": meta,
         "time": {
             "start": t0.isoformat(),
@@ -798,7 +933,11 @@ def export_race(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--year", type=int, default=2024)
-    parser.add_argument("--races", default=DEFAULT_RACES, help="Comma-separated race names")
+    parser.add_argument(
+        "--races",
+        default=DEFAULT_RACES,
+        help="Comma-separated race names, or 'all' for every race session",
+    )
     parser.add_argument("--out", type=Path, default=OUT_DIR)
     args = parser.parse_args()
 
@@ -811,9 +950,19 @@ def main() -> None:
     meeting_rows = client.get("/v1/meetings", {"year": args.year})
     meetings = {row["meeting_key"]: row for row in meeting_rows}
 
+    if args.races.strip().lower() == "all":
+        queries = [
+            session["circuit_short_name"]
+            for session in sorted(sessions, key=lambda row: row["date_start"])
+            if session.get("circuit_short_name")
+        ]
+        queries = list(dict.fromkeys(queries))
+    else:
+        queries = [part.strip() for part in args.races.split(",") if part.strip()]
+
     args.out.mkdir(parents=True, exist_ok=True)
     races: list[dict[str, Any]] = []
-    for query in [part.strip() for part in args.races.split(",") if part.strip()]:
+    for query in queries:
         payload = export_race(client, sessions, meetings, query, args.year)
         race_file = args.out / payload["meta"]["file"]
         race_file.write_text(json.dumps(payload, separators=(",", ":")))
@@ -824,7 +973,7 @@ def main() -> None:
         )
         races.append(payload["meta"])
 
-    races.sort(key=lambda race: (race["year"], race["round"]))
+    races.sort(key=lambda race: (-race["year"], race["round"]))
     races_path = args.out / "races.json"
     existing: list[dict[str, Any]] = []
     if races_path.exists():
@@ -837,7 +986,7 @@ def main() -> None:
         merged[race["id"]] = race
     races = sorted(
         (race for race in merged.values() if (args.out / race["file"]).exists()),
-        key=lambda race: (race["year"], race["round"]),
+        key=lambda race: (-race["year"], race["round"]),
     )
     races_path.write_text(json.dumps(races, indent=2) + "\n")
     log(f"\nwrote {races_path} with {len(races)} races")

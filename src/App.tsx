@@ -129,16 +129,6 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (races.length === 0) return
-    const timer = window.setTimeout(() => {
-      races.forEach((item) => {
-        if (item.id !== raceId) void loadRace(item.file).catch(() => undefined)
-      })
-    }, 2500)
-    return () => window.clearTimeout(timer)
-  }, [races, raceId])
-
-  useEffect(() => {
     const meta = races.find((item) => item.id === raceId)
     if (!meta) return
     let alive = true

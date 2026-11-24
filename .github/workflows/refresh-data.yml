@@ -8,7 +8,7 @@ on:
         required: true
         default: "2024"
       races:
-        description: Comma-separated race names (e.g. Bahrain,Monaco,Spa)
+        description: Comma-separated race names, or all for the whole season
         required: true
         default: "Bahrain,Monaco,Spa"
 

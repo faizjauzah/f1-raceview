@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Html, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
+import { CarTelemetry } from '@/components/CarTelemetry'
 import { sampleDriver, STATUSES } from '@/lib/data'
 import type { PlaybackStore } from '@/lib/playback'
 import type { SceneTransform } from '@/lib/scene'
@@ -106,15 +107,19 @@ export function RaceViewport({
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3 sm:p-4">
-        <div className="rounded border border-zinc-800/60 bg-zinc-950/60 px-2 py-1 text-[9px] text-zinc-500 backdrop-blur">
-          <div>Drag to orbit · scroll to zoom</div>
-          <div className="mt-0.5 hidden text-[9px] text-zinc-500 sm:block">
-            Space play/pause · ↑↓ driver · ←→ event
+        {cameraMode === 'follow' ? (
+          <CarTelemetry race={race} selectedDriver={selectedDriver} />
+        ) : (
+          <div className="rounded border border-zinc-800/60 bg-zinc-950/60 px-2 py-1 text-[9px] text-zinc-500 backdrop-blur">
+            <div>Drag to orbit · scroll to zoom</div>
+            <div className="mt-0.5 hidden text-[9px] text-zinc-500 sm:block">
+              Space play/pause · ↑↓ driver · ←→ event
+            </div>
+            <div className="hidden text-[9px] text-zinc-500 sm:block">
+              Enter activates the focused control
+            </div>
           </div>
-          <div className="hidden text-[9px] text-zinc-500 sm:block">
-            Enter activates the focused control
-          </div>
-        </div>
+        )}
         <div className="hidden items-center gap-3 text-[9px] text-zinc-500 sm:flex">
           {race.track.corners.length} turns · {race.drivers.length} drivers
         </div>

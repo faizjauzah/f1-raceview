@@ -8,16 +8,17 @@ A zero-backend Formula 1 race replay and telemetry visualiser. Pre-processed rac
 
 ## What it does
 
-- 3D circuit ribbon with real elevation (4× exaggeration), start/finish gantry, turn markers, and all 20 cars smoothly interpolated between one-second frames.
+- 3D circuit ribbon with real elevation (4× exaggeration), start/finish gantry, turn markers, and every car smoothly interpolated between one-second frames.
 - Three-column desktop layout: live timing on the left, 3D track in the centre, events on the right; both sidebars stay visible and each collapses to a narrow rail.
 - Free-orbit, top-down, and selected-driver follow cameras.
+- Follow mode shows a compact car-telemetry panel with speed, gear, throttle, brake, DRS, lap, tyre, and pit count for the followed car.
 - Live classification tower with position changes, team colours, tyre compound, pit count, and lap.
 - Overtake and pit-stop feed with driver search, filters, selected-driver filtering, and click-to-seek to three seconds before the event.
 - Larger playback bar with a 48 px play target, 44 px step targets, and a thicker timeline with a 20 px thumb.
 - Track status badge and timeline bands for green, yellow, safety car, VSC, and red flag intervals.
 - Playback speed from 1× to 20×, −5 s / +5 s stepping, and a full-width scrubber with event ticks.
 - Full keyboard control: Space play/pause, arrow-key driver and event navigation, focus-visible rings, a skip link, and live status announcements.
-- Three real 2024 races out of the box: Bahrain, Monaco, and Spa-Francorchamps.
+- The complete 2025 season plus Bahrain, Monaco, and Spa from 2024, in one season-grouped selector.
 
 ## Stack
 
@@ -52,6 +53,7 @@ The catalog currently covers **2023 and newer**, because telemetry comes from [O
 python3 -m venv scripts/.venv
 scripts/.venv/bin/pip install -r scripts/requirements.txt
 scripts/.venv/bin/python scripts/export_race_data.py --year 2024 --races "Bahrain,Monaco,Spa"
+scripts/.venv/bin/python scripts/export_race_data.py --year 2025 --races all
 ```
 
 Output goes to `public/data/`:
@@ -59,16 +61,17 @@ Output goes to `public/data/`:
 - `races.json` — the selector catalog, merged with existing entries so adding one race does not remove the others.
 - `<race>-<year>.json` — metadata, track geometry and corners, one-second driver frames, pits, overtakes, and track-status intervals.
 
-Caches live in `.cache/openf1/` and `.cache/fastf1/` and are ignored by git. Adding another race is the same command with another name; commit the regenerated JSON.
+Caches live in `.cache/openf1/` and `.cache/fastf1/` and are ignored by git. Adding another race is the same command with another name, or `--races all` to add every race session in a season; commit the regenerated JSON.
 
-To add a race in CI, run **Actions → Refresh race data** with the year and a comma-separated list. The workflow caches the HTTP responses, exports the JSON, commits it to `main`, and lets the normal deployment run.
+To add races in CI, run **Actions → Refresh race data** with the year and either a comma-separated list or `all`. The workflow caches the HTTP responses, exports the JSON, commits it to `main`, and lets the normal deployment run.
 
 ### Payload shape
 
 - Coordinates are decimetres; `z` is elevation. The frontend scales the track to a 100-unit scene and applies 4× vertical exaggeration.
 - Frames are one-second keyframes from the winner's start to the winner's chequered flag. The client interpolates positions, so playback stays smooth without shipping 3.7 Hz samples.
+- Car telemetry uses the same one-second frames: speed in km/h, gear, throttle and brake from 0 to 100, and DRS. Missing, sentinel, and corrupt samples are `null`; a driver with no usable running telemetry omits the arrays entirely.
 - Tyres use integer codes: `1` soft, `2` medium, `3` hard, `4` intermediate, `5` wet.
-- Each race is roughly 2.3–2.8 MB raw (about 0.6 MB gzipped) and under the 4 MB validation limit.
+- Each race is roughly 3.2–4.5 MB raw (about 1 MB gzipped) and under the 6 MB validation limit.
 
 ## Verify
 
@@ -79,7 +82,7 @@ npx playwright install chromium   # once
 npm run test:e2e
 ```
 
-`test:e2e` builds the app, starts `vite preview`, checks playback, keyboard shortcuts, list navigation, driver search, sidebar collapse, larger control targets, camera switching, event seeking, race switching, responsive layout, and fails on console or page errors.
+`test:e2e` builds the app, starts `vite preview`, checks playback, keyboard shortcuts, list navigation, driver search, sidebar collapse, larger control targets, camera switching, follow telemetry, event seeking, race switching, responsive layout, and fails on console or page errors.
 
 ## Deploy to GitHub Pages
 
@@ -93,7 +96,7 @@ npm run test:e2e
 
 - **Playback store**: a single requestAnimationFrame clock publishes a React snapshot at 20 Hz for the UI; the 3D scene reads the mutable clock directly and interpolates each driver's one-second keyframes, so the Canvas does not re-render at 60 Hz.
 - **Position and events**: the exporter uses the official position feed, pairs one-place gains with the displaced driver, and filters pit windows, non-green status, lapped traffic, and duplicates. Corners come from FastF1's circuit metadata.
-- **Static data**: no API is called at runtime. The selected race JSON is lazy-loaded; the other races are prefetched after the first render.
+- **Static data**: no API is called at runtime. The selected race JSON is lazy-loaded; with a full-season catalogue, other races are not prefetched.
 
 Decisions are recorded in [docs/adr](docs/adr), and the domain vocabulary is in [GLOSSARY.md](GLOSSARY.md).
 
@@ -106,6 +109,10 @@ Decisions are recorded in [docs/adr](docs/adr), and the domain vocabulary is in 
 - **Post-race penalties are not applied.** The replay shows on-track order, so Spa 2024 ends with Russell crossing first even though he was later disqualified.
 - **Sector labels are approximate.** "Sector N Straight" is derived from thirds of the lap when an overtake is not near a mapped corner.
 - **Collapsing a sidebar resets its local state.** The panel is unmounted, so its search, filters, and scroll position are fresh when reopened.
+- **Car telemetry has gaps.** OpenF1 sends sentinel values for retired cars and occasionally drops samples. The exporter stores nulls, and the follow panel shows "No telemetry" or "Out" rather than inventing data. A 5-second feed outage is held at its last sample.
+- **Pre-start retirements.** A DNS or formation-lap retirement has no in-window location samples; the exporter holds the last known position and removes the car at the green flag.
+- **2025 Miami's lap feed starts at lap 26.** OpenF1 omits laps 2–25 and some lap start times. The exporter recovers the race start from the winner's official duration and interpolates the lap counter across the gap; positions and telemetry are unaffected.
+- **2025 Spain has 19 starters.** Lance Stroll withdrew after qualifying, so that race file has 19 drivers; the validator accepts 19 or 20.
 - Only races where OpenF1 has telemetry (2023+) can be exported.
 
 ## Attribution

@@ -34,6 +34,11 @@ export type DriverData = {
   lap: number[]
   pos: number[]
   tyre: number[]
+  speed?: (number | null)[]
+  gear?: (number | null)[]
+  throttle?: (number | null)[]
+  brake?: (number | null)[]
+  drs?: (number | null)[]
 }
 
 export type PitStop = {

@@ -1,9 +1,11 @@
-import { Crosshair, Map, Orbit, Radio } from 'lucide-react'
+import { Crosshair, Map as MapIcon, Orbit, Radio } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
 } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -23,7 +25,7 @@ type HeaderProps = {
 
 const CAMERAS: { id: CameraMode; label: string; icon: typeof Orbit }[] = [
   { id: 'orbit', label: 'Free orbit', icon: Orbit },
-  { id: 'top', label: 'Top-down map', icon: Map },
+  { id: 'top', label: 'Top-down map', icon: MapIcon },
   { id: 'follow', label: 'Follow selected driver', icon: Crosshair },
 ]
 
@@ -37,6 +39,12 @@ export function Header({
 }: HeaderProps) {
   const statusMeta = STATUSES[status] ?? STATUSES[1]
   const selectedRace = races.find((race) => race.id === raceId)
+  const seasons = new Map<number, RaceMeta[]>()
+  for (const race of races) {
+    const season = seasons.get(race.year) ?? []
+    season.push(race)
+    seasons.set(race.year, season)
+  }
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b px-2 sm:gap-3 sm:px-5">
       <div className="flex min-w-0 items-center gap-2.5">
@@ -75,10 +83,15 @@ export function Header({
           </span>
         </SelectTrigger>
         <SelectContent>
-          {races.map((race) => (
-            <SelectItem key={race.id} value={race.id} className="text-xs">
-              {race.year} · {race.name}
-            </SelectItem>
+          {[...seasons.entries()].map(([year, items]) => (
+            <SelectGroup key={year}>
+              <SelectLabel>{year}</SelectLabel>
+              {items.map((race) => (
+                <SelectItem key={race.id} value={race.id} className="text-xs">
+                  {race.year} · {race.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           ))}
         </SelectContent>
       </Select>

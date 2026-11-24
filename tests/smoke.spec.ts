@@ -1,4 +1,10 @@
 import { expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+async function selectRace(page: Page, name: RegExp) {
+  await page.locator('[aria-label="Select race"]').click()
+  await page.getByRole('option', { name }).click()
+}
 
 test('loads, plays, and seeks to an event without runtime errors', async ({ page }) => {
   const errors: string[] = []
@@ -9,19 +15,26 @@ test('loads, plays, and seeks to an event without runtime errors', async ({ page
 
   await page.goto('/')
   await expect(page.getByText('RACEVIEW')).toBeVisible()
+  await expect(page.getByText('2025 · Australian Grand Prix')).toBeVisible()
   await expect(page.locator('canvas')).toBeVisible()
+
+  await page.keyboard.press('Tab')
+  const skipLink = page.getByRole('link', { name: 'Skip to content' })
+  await expect(skipLink).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.locator('#main')).toBeFocused()
+
+  await selectRace(page, /2024 · Bahrain Grand Prix/)
+  await expect(page.getByRole('combobox', { name: 'Select race' })).toHaveText(
+    /2024 · Bahrain Grand Prix/,
+  )
+  await expect(page.getByText('Sakhir')).toBeVisible({ timeout: 30_000 })
   await expect(page.getByText('VER', { exact: true }).first()).toBeVisible()
 
   const playBox = await page.getByRole('button', { name: 'Play replay' }).boundingBox()
   expect(playBox?.height ?? 0).toBeGreaterThanOrEqual(44)
   const trackBox = await page.locator('[data-slot="slider-track"]').boundingBox()
   expect(trackBox?.height ?? 0).toBeGreaterThanOrEqual(8)
-
-  await page.keyboard.press('Tab')
-  const skipLink = page.getByRole('link', { name: 'Skip to content' })
-  await expect(skipLink).toBeVisible()
-  await page.keyboard.press('Enter')
-  await expect(page.locator('#main')).toBeFocused()
 
   const viewport = page.getByRole('region', { name: /3D race track/ })
   await viewport.focus()
@@ -75,8 +88,14 @@ test('loads, plays, and seeks to an event without runtime errors', async ({ page
   }
   await page.waitForTimeout(400)
   await page.getByRole('button', { name: 'Follow selected driver' }).click()
+  await expect(page.getByTestId('car-telemetry')).toBeVisible()
+  await expect(page.getByTestId('car-telemetry')).toContainText('km/h')
+  await expect(page.getByTestId('car-speed')).toHaveText(/^\d+$/)
+  await expect(page.getByTestId('car-gear')).toHaveText(/^(\d|N)$/)
+  await page.screenshot({ path: 'test-results/follow-telemetry.png', fullPage: true })
   await page.waitForTimeout(400)
   await page.getByRole('button', { name: 'Free orbit' }).click()
+  await expect(page.getByTestId('car-telemetry')).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Collapse live timing' }).click()
   const expandTiming = page.getByRole('button', { name: 'Expand live timing' })
@@ -98,6 +117,8 @@ test('loads, plays, and seeks to an event without runtime errors', async ({ page
 
 test('driver and event lists support arrow keys', async ({ page }) => {
   await page.goto('/')
+  await expect(page.getByText('2025 · Australian Grand Prix')).toBeVisible()
+  await selectRace(page, /2024 · Bahrain Grand Prix/)
   await expect(page.getByText('VER', { exact: true }).first()).toBeVisible()
 
   const verRow = page.getByRole('button', { name: /VER/ }).first()
@@ -119,9 +140,8 @@ test('switches race and loads Monaco', async ({ page }) => {
   })
 
   await page.goto('/')
-  await expect(page.getByText('2024 · Bahrain Grand Prix')).toBeVisible()
-  await page.locator('[aria-label="Select race"]').click()
-  await page.getByRole('option', { name: /Monaco Grand Prix/ }).click()
+  await expect(page.getByText('2025 · Australian Grand Prix')).toBeVisible()
+  await selectRace(page, /2024 · Monaco Grand Prix/)
   await expect(page.getByRole('combobox', { name: 'Select race' })).toHaveText(
     /2024 · Monaco Grand Prix/,
   )
@@ -130,8 +150,7 @@ test('switches race and loads Monaco', async ({ page }) => {
   await page.waitForTimeout(500)
   await page.screenshot({ path: 'test-results/monaco.png', fullPage: true })
 
-  await page.locator('[aria-label="Select race"]').click()
-  await page.getByRole('option', { name: /Belgian Grand Prix/ }).click()
+  await selectRace(page, /2024 · Belgian Grand Prix/)
   await expect(page.getByRole('combobox', { name: 'Select race' })).toHaveText(
     /2024 · Belgian Grand Prix/,
   )
