@@ -38,7 +38,7 @@ function drsState(drs: number | null) {
 function Pedal({ label, value, color }: { label: string; value: number | null; color: string }) {
   return (
     <div>
-      <div className="mb-0.5 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+      <div className="mb-0.5 flex items-center justify-between text-[9px] uppercase tracking-[0.16em] text-zinc-600 sm:text-[10px]">
         <span>{label}</span>
         <span className="telemetry text-zinc-400">{value ?? '—'}</span>
       </div>
@@ -113,19 +113,19 @@ export function CarTelemetry({ race, selectedDriver }: CarTelemetryProps) {
     <div
       data-testid="car-telemetry"
       aria-hidden="true"
-      className="pointer-events-none w-[260px] max-w-[calc(100vw-2rem)] rounded-md border border-zinc-800/70 bg-zinc-950/85 px-3 py-2.5 backdrop-blur sm:w-[340px]"
+      className="pointer-events-none w-[210px] max-w-[calc(100vw-2rem)] rounded-md border border-zinc-800/70 bg-zinc-950/85 px-2 py-2 backdrop-blur sm:w-[340px] sm:px-3 sm:py-2.5"
     >
       <div className="flex items-center gap-1.5">
         <span className="h-3 w-[2px] rounded-full" style={{ backgroundColor: color }} />
-        <span className="telemetry text-[14px] font-semibold tracking-wide text-zinc-100">
+        <span className="telemetry text-xs font-semibold tracking-wide text-zinc-100 sm:text-[14px]">
           {driver.code}
         </span>
-        <span className="telemetry text-[11px] text-zinc-500">#{driver.number}</span>
-        <span className="hidden min-w-0 truncate text-[11px] text-zinc-400 sm:inline">
+        <span className="telemetry text-[10px] text-zinc-500 sm:text-[11px]">#{driver.number}</span>
+        <span className="hidden min-w-0 truncate text-[10px] text-zinc-400 sm:inline sm:text-[11px]">
           {driver.name}
         </span>
         <span
-          className={`ml-auto shrink-0 rounded border px-1 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${
+          className={`ml-auto shrink-0 rounded border px-1 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] sm:text-[10px] ${
             leaderFallback
               ? 'border-amber-500/40 text-amber-300'
               : active
@@ -142,17 +142,17 @@ export function CarTelemetry({ race, selectedDriver }: CarTelemetryProps) {
           <div className="flex items-baseline gap-1">
             <span
               data-testid="car-speed"
-              className="telemetry text-3xl font-semibold leading-none text-zinc-100"
+              className="telemetry text-2xl font-semibold leading-none text-zinc-100 sm:text-3xl"
             >
               {speed ?? '–'}
             </span>
-            <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">km/h</span>
+            <span className="text-[9px] uppercase tracking-[0.18em] text-zinc-500 sm:text-[10px]">km/h</span>
           </div>
           <div className="ml-auto flex items-center gap-1.5">
-            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">Gear</span>
+            <span className="text-[9px] uppercase tracking-[0.16em] text-zinc-600 sm:text-[10px]">Gear</span>
             <span
               data-testid="car-gear"
-              className="telemetry flex size-7 items-center justify-center rounded border border-zinc-700 bg-zinc-900 text-sm font-semibold text-zinc-100"
+              className="telemetry flex size-6 items-center justify-center rounded border border-zinc-700 bg-zinc-900 text-xs font-semibold text-zinc-100 sm:size-7 sm:text-sm"
             >
               {gear === null ? '–' : gear === 0 ? 'N' : gear}
             </span>
@@ -165,7 +165,7 @@ export function CarTelemetry({ race, selectedDriver }: CarTelemetryProps) {
           />
         </div>
         {!hasTelemetry && active && (
-          <div className="mt-1 text-[10px] uppercase tracking-[0.16em] text-amber-300/80">
+          <div className="mt-1 text-[9px] uppercase tracking-[0.16em] text-amber-300/80 sm:text-[10px]">
             No telemetry
           </div>
         )}
@@ -174,19 +174,19 @@ export function CarTelemetry({ race, selectedDriver }: CarTelemetryProps) {
           <Pedal label="Thr" value={throttle} color="bg-emerald-400" />
           <Pedal label="Brk" value={brake} color="bg-red-400" />
           <div className="text-right">
-            <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">DRS</div>
-            <div className={`text-[11px] font-semibold tracking-wider ${drsMeta.className}`}>
+            <div className="text-[9px] uppercase tracking-[0.16em] text-zinc-600 sm:text-[10px]">DRS</div>
+            <div className={`text-[10px] font-semibold tracking-wider sm:text-[11px] ${drsMeta.className}`}>
               {drsMeta.label}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-2 flex items-center gap-2 border-t border-zinc-800/70 pt-1.5 text-[11px] text-zinc-500">
+      <div className="mt-2 flex items-center gap-2 border-t border-zinc-800/70 pt-1.5 text-[10px] text-zinc-500 sm:text-[11px]">
         <span className="telemetry">L{lap}</span>
         <span
           title={tyreMeta.label}
-          className={`flex size-5 items-center justify-center rounded-full border text-[9px] font-bold ${tyreMeta.className}`}
+          className={`flex size-4 items-center justify-center rounded-full border text-[8px] font-bold sm:size-5 sm:text-[9px] ${tyreMeta.className}`}
         >
           {tyreMeta.short}
         </span>

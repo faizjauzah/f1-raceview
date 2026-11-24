@@ -91,7 +91,7 @@ export function RaceViewport({
         />
       </Canvas>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3 sm:p-4">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-start justify-between p-3 sm:p-4">
         <div className="rounded-md border border-zinc-800/70 bg-zinc-950/70 px-3 py-2 backdrop-blur">
           <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">Track</div>
           <div className="text-[14px] font-medium text-zinc-200">
@@ -108,7 +108,7 @@ export function RaceViewport({
         </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3 sm:p-4">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex items-end justify-between p-3 sm:p-4">
         {cameraMode === 'follow' ? (
           <CarTelemetry race={race} selectedDriver={selectedDriver} />
         ) : (
