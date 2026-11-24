@@ -16,10 +16,6 @@ export function TimingTower({ race, time, selectedDriver, onSelectDriver }: Timi
   const previous = indexAt(Math.max(0, time - 10), race.time.step, race.time.count)
   const rowRefs = useRef(new Map<string, HTMLButtonElement>())
 
-  useEffect(() => {
-    if (selectedDriver) rowRefs.current.get(selectedDriver)?.scrollIntoView({ block: 'nearest' })
-  }, [selectedDriver])
-
   const rows = race.drivers
     .map((driver) => ({
       driver,
@@ -34,8 +30,24 @@ export function TimingTower({ race, time, selectedDriver, onSelectDriver }: Timi
     }))
     .sort((a, b) => a.position - b.position)
 
+  const selectedPosition = rows.find((row) => row.driver.code === selectedDriver)?.position
+
+  useEffect(() => {
+    if (!selectedDriver) return
+    const frame = requestAnimationFrame(() => {
+      rowRefs.current.get(selectedDriver)?.scrollIntoView({ block: 'nearest' })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [selectedDriver, selectedPosition])
+
   return (
     <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center justify-between border-b px-3 py-2">
+        <h2 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-300">
+          Live timing
+        </h2>
+        <span className="text-[9px] text-zinc-600">{rows.length} drivers</span>
+      </div>
       <div className="grid shrink-0 grid-cols-[34px_1fr_44px_38px_52px] items-center gap-1 border-b px-3 py-2 text-[9px] font-medium uppercase tracking-[0.18em] text-zinc-500">
         <span>Pos</span>
         <span>Driver</span>

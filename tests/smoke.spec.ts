@@ -31,6 +31,8 @@ test('loads, plays, and seeks to an event without runtime errors', async ({ page
   await page.keyboard.press('ArrowRight')
   await expect(page.getByTestId('a11y-status')).toContainText('Overtake on lap')
   await expect(page.getByText('Selected driver only')).toBeVisible()
+  const timing = page.getByRole('complementary', { name: 'Live timing' })
+  await expect(timing.getByRole('button', { name: /SAR/ })).toBeInViewport()
 
   await page.getByRole('button', { name: 'Play replay' }).click()
   await page.waitForTimeout(600)
@@ -44,12 +46,17 @@ test('loads, plays, and seeks to an event without runtime errors', async ({ page
   await page.getByRole('button', { name: 'Top-down map' }).click()
   await page.getByRole('button', { name: 'Free orbit' }).click()
 
-  await page.getByRole('tab', { name: /Events/ }).click()
   const firstEvent = page.locator('button').filter({ hasText: / passed / }).first()
   await expect(firstEvent).toBeVisible()
   await firstEvent.click()
   await expect(page.getByRole('button', { name: 'Play replay' })).toBeVisible()
   await expect(page.getByText(/LAP \d+ ·/).first()).toBeVisible()
+
+  const search = page.getByRole('searchbox', { name: 'Search events by driver' })
+  await search.fill('Leclerc')
+  await expect(page.getByRole('button', { name: /PER passed LEC/ }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: /PER passed RUS/ })).toHaveCount(0)
+  await search.fill('')
 
   const selectedOnly = page.getByRole('switch')
   await selectedOnly.click()
@@ -67,9 +74,6 @@ test('loads, plays, and seeks to an event without runtime errors', async ({ page
   await page.getByRole('button', { name: 'Free orbit' }).click()
 
   await page.screenshot({ path: 'test-results/raceview.png', fullPage: true })
-  await page.getByRole('tab', { name: /Live timing/ }).click()
-  await expect(page.getByText('Live timing')).toBeVisible()
-  await page.screenshot({ path: 'test-results/raceview-timing.png', fullPage: true })
   expect(errors).toEqual([])
 })
 
@@ -82,7 +86,6 @@ test('driver and event lists support arrow keys', async ({ page }) => {
   await page.keyboard.press('ArrowDown')
   await expect(page.getByTestId('a11y-status')).toContainText('Driver LEC selected')
 
-  await page.getByRole('tab', { name: /Events/ }).click()
   const firstEvent = page.locator('button').filter({ hasText: / passed / }).first()
   await firstEvent.focus()
   await page.keyboard.press('ArrowDown')

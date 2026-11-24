@@ -5,7 +5,6 @@ import { Header } from '@/components/Header'
 import { PlaybackBar } from '@/components/PlaybackBar'
 import { RaceViewport } from '@/components/RaceViewport'
 import { TimingTower } from '@/components/TimingTower'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { loadRace, loadRaces, raceEvents, STATUSES, statusAt } from '@/lib/data'
 import { usePlayback, usePlaybackSnapshot } from '@/lib/playback'
 import type { FeedItem, HighlightEvent, RaceData, RaceMeta } from '@/types'
@@ -63,7 +62,6 @@ export default function App() {
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null)
   const [cameraMode, setCameraMode] = useState<CameraMode>('orbit')
   const [highlight, setHighlight] = useState<HighlightEvent | null>(null)
-  const [activeTab, setActiveTab] = useState('timing')
 
   useEffect(() => {
     let alive = true
@@ -146,7 +144,6 @@ export default function App() {
           ? { kind: 'overtake', event: item.raw }
           : { kind: 'pit', event: item.raw },
       )
-      setActiveTab('events')
     },
     [store],
   )
@@ -272,9 +269,9 @@ export default function App() {
         id="main"
         tabIndex={-1}
         aria-label="Race replay"
-        className="flex min-h-0 flex-1 flex-col outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-inset lg:grid lg:grid-cols-[minmax(0,1fr)_380px]"
+        className="flex min-h-0 flex-1 flex-col outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-inset lg:grid lg:grid-cols-[300px_minmax(0,1fr)_340px] lg:grid-rows-[minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_380px]"
       >
-        <section className="h-[46vh] min-h-[320px] lg:h-auto lg:min-h-0">
+        <section className="order-1 h-[46vh] min-h-[320px] lg:col-start-2 lg:row-start-1 lg:h-auto lg:min-h-0">
           <MemoViewport
             race={race}
             store={store}
@@ -288,42 +285,29 @@ export default function App() {
           />
         </section>
 
-        <aside className="flex min-h-0 flex-1 flex-col border-t bg-zinc-950/50 lg:border-l lg:border-t-0">
-          <Tabs
-            value={activeTab}
-            onValueChange={(value) => setActiveTab(String(value))}
-            className="flex min-h-0 flex-1 flex-col gap-0"
-          >
-            <div className="shrink-0 p-2.5 pb-0">
-              <TabsList className="grid w-full grid-cols-2 bg-zinc-900/60">
-                <TabsTrigger value="timing" className="text-[10px] uppercase tracking-[0.14em]">
-                  Live timing
-                </TabsTrigger>
-                <TabsTrigger value="events" className="gap-1.5 text-[10px] uppercase tracking-[0.14em]">
-                  Events
-                  <span className="rounded bg-zinc-800 px-1 text-[8px] text-zinc-400">
-                    {race.overtakes.length + race.pits.length}
-                  </span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            <TabsContent value="timing" className="mt-2 min-h-0 flex-1">
-              <TimingTower
-                race={race}
-                time={snapshot.time}
-                selectedDriver={selectedDriver}
-                onSelectDriver={handleSelectDriver}
-              />
-            </TabsContent>
-            <TabsContent value="events" className="mt-2 min-h-0 flex-1">
-              <MemoFeed
-                race={race}
-                selectedDriver={selectedDriver}
-                highlightKey={highlightKey}
-                onSeekEvent={handleSeekEvent}
-              />
-            </TabsContent>
-          </Tabs>
+        <aside
+          aria-label="Live timing"
+          className="order-2 flex h-[420px] min-h-0 flex-col border-t bg-zinc-950/50 lg:col-start-1 lg:row-start-1 lg:h-auto lg:border-r lg:border-t-0"
+        >
+          <TimingTower
+            race={race}
+            time={snapshot.time}
+            selectedDriver={selectedDriver}
+            onSelectDriver={handleSelectDriver}
+          />
+        </aside>
+
+        <aside
+          aria-label="Events"
+          className="order-3 flex h-[500px] min-h-0 flex-col border-t bg-zinc-950/50 lg:col-start-3 lg:row-start-1 lg:h-auto lg:border-l lg:border-t-0"
+        >
+          <MemoFeed
+            key={race.meta.id}
+            race={race}
+            selectedDriver={selectedDriver}
+            highlightKey={highlightKey}
+            onSeekEvent={handleSeekEvent}
+          />
         </aside>
       </main>
 

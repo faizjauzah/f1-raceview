@@ -2,16 +2,15 @@
 
 A zero-backend Formula 1 race replay and telemetry visualiser. Pre-processed race data is shipped as static JSON, so the whole app runs on GitHub Pages.
 
-| Timing tower | Event feed |
-| --- | --- |
-| ![RaceView timing view](docs/raceview-timing.png) | ![RaceView event feed](docs/raceview-events.png) |
+![RaceView replay](docs/raceview.png)
 
 ## What it does
 
 - 3D circuit ribbon with real elevation (4× exaggeration), start/finish gantry, turn markers, and all 20 cars smoothly interpolated between one-second frames.
+- Three-column desktop layout: live timing on the left, 3D track in the centre, events on the right; both sidebars stay visible.
 - Free-orbit, top-down, and selected-driver follow cameras.
 - Live classification tower with position changes, team colours, tyre compound, pit count, and lap.
-- Overtake and pit-stop feed with filters, selected-driver filtering, and click-to-seek to three seconds before the event.
+- Overtake and pit-stop feed with driver search, filters, selected-driver filtering, and click-to-seek to three seconds before the event.
 - Track status badge and timeline bands for green, yellow, safety car, VSC, and red flag intervals.
 - Playback speed from 1× to 20×, −5 s / +5 s stepping, and a full-width scrubber with event ticks.
 - Full keyboard control: Space play/pause, arrow-key driver and event navigation, focus-visible rings, a skip link, and live status announcements.
@@ -34,7 +33,7 @@ Race JSON is committed in `public/data/`, so no Python step is needed to run the
 
 - **Space** — play or pause. This is global, except while a select, slider, switch, tab, link, or text field is focused, where the control keeps its native Space behaviour.
 - **↑ / ↓** — previous or next driver in the running order. Inside the timing tower the focus moves with the selection.
-- **← / →** — previous or next overtake or pit event. The replay seeks to three seconds before it, opens the Events tab, and focuses the event card.
+- **← / →** — previous or next overtake or pit event. The replay seeks to three seconds before it and focuses the event card in the right sidebar.
 - **Enter** — activate the focused button, tab, or link. Use this for buttons because Space is reserved for playback.
 - **Escape** — clear the selected driver and pinned event.
 - **Tab** — move through the skip link, race selector, camera presets, 3D viewport, timing tower, event feed, and playback controls.
@@ -76,7 +75,7 @@ npx playwright install chromium   # once
 npm run test:e2e
 ```
 
-`test:e2e` builds the app, starts `vite preview`, checks playback, keyboard shortcuts, list navigation, camera switching, event seeking, race switching, and fails on console or page errors.
+`test:e2e` builds the app, starts `vite preview`, checks playback, keyboard shortcuts, list navigation, driver search, camera switching, event seeking, race switching, responsive layout, and fails on console or page errors.
 
 ## Deploy to GitHub Pages
 

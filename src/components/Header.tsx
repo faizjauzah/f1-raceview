@@ -38,17 +38,17 @@ export function Header({
   const statusMeta = STATUSES[status] ?? STATUSES[1]
   const selectedRace = races.find((race) => race.id === raceId)
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b px-3 sm:px-5">
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b px-2 sm:gap-3 sm:px-5">
       <div className="flex min-w-0 items-center gap-2.5">
         <div className="flex size-7 items-center justify-center rounded-md border border-zinc-700/70 bg-zinc-900">
           <Radio className="size-3.5 text-zinc-300" />
         </div>
         <div className="min-w-0 leading-none">
           <div className="flex items-center gap-2">
-            <h1 className="text-[13px] font-semibold tracking-[0.22em] text-zinc-100">
+            <h1 className="text-[11px] font-semibold tracking-[0.18em] text-zinc-100 sm:text-[13px] sm:tracking-[0.22em]">
               RACEVIEW
             </h1>
-            <span className="hidden rounded border border-zinc-800 px-1 py-0.5 text-[8px] tracking-widest text-zinc-500 sm:inline">
+            <span className="hidden rounded border border-zinc-800 px-1 py-0.5 text-[8px] tracking-widest text-zinc-500 md:inline">
               REPLAY
             </span>
           </div>
@@ -67,7 +67,7 @@ export function Header({
         }}
       >
         <SelectTrigger
-          className="h-8 w-[190px] border-zinc-800 bg-zinc-950 text-xs sm:w-[250px]"
+          className="h-8 w-[150px] border-zinc-800 bg-zinc-950 text-xs sm:w-[250px]"
           aria-label="Select race"
         >
           <span className="truncate">
@@ -86,14 +86,14 @@ export function Header({
       <div className="ml-auto flex items-center gap-2">
         <Badge
           variant="outline"
-          className={`h-7 gap-1.5 rounded-full px-2.5 text-[10px] font-semibold tracking-wider ${statusMeta.className}`}
+          className={`h-7 gap-1.5 rounded-full px-2 text-[10px] font-semibold tracking-wider sm:px-2.5 ${statusMeta.className}`}
         >
           <span className={`size-1.5 rounded-full ${statusMeta.dot} animate-pulse`} />
           <span className="hidden sm:inline">{statusMeta.label}</span>
           <span className="sm:hidden">{statusMeta.short}</span>
         </Badge>
 
-        <div className="flex items-center rounded-md border border-zinc-800 bg-zinc-950 p-0.5">
+        <div className="hidden items-center rounded-md border border-zinc-800 bg-zinc-950 p-0.5 sm:flex">
           {CAMERAS.map(({ id, label, icon: Icon }) => (
             <Tooltip key={id}>
               <TooltipTrigger

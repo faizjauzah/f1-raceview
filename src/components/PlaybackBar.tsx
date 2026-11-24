@@ -27,7 +27,7 @@ export function PlaybackBar({ race, store, snapshot }: PlaybackBarProps) {
   const percent = (value: number) => `${Math.max(0, Math.min(100, (value / duration) * 100))}%`
 
   return (
-    <div className="shrink-0 border-t bg-zinc-950/80 px-3 py-2.5 backdrop-blur sm:px-5">
+    <div className="sticky bottom-0 z-30 shrink-0 border-t bg-zinc-950/80 px-3 py-2.5 backdrop-blur sm:px-5">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex items-center gap-2">
           <div className="w-[104px]">
