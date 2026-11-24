@@ -1,5 +1,5 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronsLeft, ChevronsRight, Loader2 } from 'lucide-react'
 import { EventFeed } from '@/components/EventFeed'
 import { Header } from '@/components/Header'
 import { PlaybackBar } from '@/components/PlaybackBar'
@@ -8,6 +8,7 @@ import { TimingTower } from '@/components/TimingTower'
 import { loadRace, loadRaces, raceEvents, STATUSES, statusAt } from '@/lib/data'
 import { usePlayback, usePlaybackSnapshot } from '@/lib/playback'
 import type { FeedItem, HighlightEvent, RaceData, RaceMeta } from '@/types'
+import type { RefObject } from 'react'
 
 type CameraMode = 'orbit' | 'top' | 'follow'
 
@@ -51,6 +52,33 @@ function FullScreenLoader({ error }: { error?: string | null }) {
   )
 }
 
+type CollapsedSidebarProps = {
+  label: string
+  side: 'left' | 'right'
+  onExpand: () => void
+  buttonRef: RefObject<HTMLButtonElement | null>
+}
+
+function CollapsedSidebar({ label, side, onExpand, buttonRef }: CollapsedSidebarProps) {
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      onClick={onExpand}
+      aria-label={`Expand ${label.toLowerCase()}`}
+      title={`Expand ${label.toLowerCase()}`}
+      className="flex h-10 w-full items-center justify-between gap-2 px-3 text-[9px] font-medium uppercase tracking-[0.16em] text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset lg:h-full lg:flex-col lg:justify-between lg:px-0 lg:py-3"
+    >
+      <span className="lg:[writing-mode:vertical-rl]">{label}</span>
+      {side === 'left' ? (
+        <ChevronsRight className="size-4 shrink-0" />
+      ) : (
+        <ChevronsLeft className="size-4 shrink-0" />
+      )}
+    </button>
+  )
+}
+
 export default function App() {
   const store = usePlayback()
   const snapshot = usePlaybackSnapshot()
@@ -62,6 +90,20 @@ export default function App() {
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null)
   const [cameraMode, setCameraMode] = useState<CameraMode>('orbit')
   const [highlight, setHighlight] = useState<HighlightEvent | null>(null)
+  const [timingOpen, setTimingOpen] = useState(true)
+  const [eventsOpen, setEventsOpen] = useState(true)
+  const timingToggleRef = useRef<HTMLButtonElement>(null)
+  const eventsToggleRef = useRef<HTMLButtonElement>(null)
+
+  const toggleTiming = useCallback(() => {
+    setTimingOpen((open) => !open)
+    requestAnimationFrame(() => timingToggleRef.current?.focus())
+  }, [])
+
+  const toggleEvents = useCallback(() => {
+    setEventsOpen((open) => !open)
+    requestAnimationFrame(() => eventsToggleRef.current?.focus())
+  }, [])
 
   useEffect(() => {
     let alive = true
@@ -269,7 +311,12 @@ export default function App() {
         id="main"
         tabIndex={-1}
         aria-label="Race replay"
-        className="flex min-h-0 flex-1 flex-col outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-inset lg:grid lg:grid-cols-[300px_minmax(0,1fr)_340px] lg:grid-rows-[minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_380px]"
+        style={{
+          gridTemplateColumns: `${
+            timingOpen ? 'clamp(280px, 22vw, 320px)' : '44px'
+          } minmax(0, 1fr) ${eventsOpen ? 'clamp(320px, 26vw, 380px)' : '44px'}`,
+        }}
+        className="flex min-h-0 flex-1 flex-col outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-inset lg:grid lg:grid-rows-[minmax(0,1fr)]"
       >
         <section className="order-1 h-[46vh] min-h-[320px] lg:col-start-2 lg:row-start-1 lg:h-auto lg:min-h-0">
           <MemoViewport
@@ -287,27 +334,53 @@ export default function App() {
 
         <aside
           aria-label="Live timing"
-          className="order-2 flex h-[420px] min-h-0 flex-col border-t bg-zinc-950/50 lg:col-start-1 lg:row-start-1 lg:h-auto lg:border-r lg:border-t-0"
+          className={`order-2 flex min-h-0 flex-col border-t bg-zinc-950/50 lg:col-start-1 lg:row-start-1 lg:border-r lg:border-t-0 ${
+            timingOpen ? 'h-[420px] lg:h-auto' : 'h-auto'
+          }`}
         >
-          <TimingTower
-            race={race}
-            time={snapshot.time}
-            selectedDriver={selectedDriver}
-            onSelectDriver={handleSelectDriver}
-          />
+          {timingOpen ? (
+            <TimingTower
+              race={race}
+              time={snapshot.time}
+              selectedDriver={selectedDriver}
+              onSelectDriver={handleSelectDriver}
+              onCollapse={toggleTiming}
+              collapseButtonRef={timingToggleRef}
+            />
+          ) : (
+            <CollapsedSidebar
+              label="Live timing"
+              side="left"
+              onExpand={toggleTiming}
+              buttonRef={timingToggleRef}
+            />
+          )}
         </aside>
 
         <aside
           aria-label="Events"
-          className="order-3 flex h-[500px] min-h-0 flex-col border-t bg-zinc-950/50 lg:col-start-3 lg:row-start-1 lg:h-auto lg:border-l lg:border-t-0"
+          className={`order-3 flex min-h-0 flex-col border-t bg-zinc-950/50 lg:col-start-3 lg:row-start-1 lg:border-l lg:border-t-0 ${
+            eventsOpen ? 'h-[500px] lg:h-auto' : 'h-auto'
+          }`}
         >
-          <MemoFeed
-            key={race.meta.id}
-            race={race}
-            selectedDriver={selectedDriver}
-            highlightKey={highlightKey}
-            onSeekEvent={handleSeekEvent}
-          />
+          {eventsOpen ? (
+            <MemoFeed
+              key={race.meta.id}
+              race={race}
+              selectedDriver={selectedDriver}
+              highlightKey={highlightKey}
+              onSeekEvent={handleSeekEvent}
+              onCollapse={toggleEvents}
+              collapseButtonRef={eventsToggleRef}
+            />
+          ) : (
+            <CollapsedSidebar
+              label="Events"
+              side="right"
+              onExpand={toggleEvents}
+              buttonRef={eventsToggleRef}
+            />
+          )}
         </aside>
       </main>
 

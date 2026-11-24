@@ -12,6 +12,11 @@ test('loads, plays, and seeks to an event without runtime errors', async ({ page
   await expect(page.locator('canvas')).toBeVisible()
   await expect(page.getByText('VER', { exact: true }).first()).toBeVisible()
 
+  const playBox = await page.getByRole('button', { name: 'Play replay' }).boundingBox()
+  expect(playBox?.height ?? 0).toBeGreaterThanOrEqual(44)
+  const trackBox = await page.locator('[data-slot="slider-track"]').boundingBox()
+  expect(trackBox?.height ?? 0).toBeGreaterThanOrEqual(8)
+
   await page.keyboard.press('Tab')
   const skipLink = page.getByRole('link', { name: 'Skip to content' })
   await expect(skipLink).toBeVisible()
@@ -72,6 +77,20 @@ test('loads, plays, and seeks to an event without runtime errors', async ({ page
   await page.getByRole('button', { name: 'Follow selected driver' }).click()
   await page.waitForTimeout(400)
   await page.getByRole('button', { name: 'Free orbit' }).click()
+
+  await page.getByRole('button', { name: 'Collapse live timing' }).click()
+  const expandTiming = page.getByRole('button', { name: 'Expand live timing' })
+  await expect(expandTiming).toBeVisible()
+  await expect(expandTiming).toBeFocused()
+  await expandTiming.click()
+  await expect(page.getByRole('button', { name: 'Collapse live timing' })).toBeFocused()
+
+  await page.getByRole('button', { name: 'Collapse events' }).click()
+  const expandEvents = page.getByRole('button', { name: 'Expand events' })
+  await expect(expandEvents).toBeVisible()
+  await expect(expandEvents).toBeFocused()
+  await expandEvents.click()
+  await expect(page.getByRole('button', { name: 'Collapse events' })).toBeFocused()
 
   await page.screenshot({ path: 'test-results/raceview.png', fullPage: true })
   expect(errors).toEqual([])

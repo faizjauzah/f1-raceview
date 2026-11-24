@@ -9,6 +9,13 @@ test('mobile layout stacks panels without horizontal overflow', async ({ page })
   await expect(page.getByRole('complementary', { name: 'Live timing' })).toBeVisible()
   await expect(page.getByRole('complementary', { name: 'Events' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+
+  const collapseTiming = page.getByRole('button', { name: 'Collapse live timing' })
+  await collapseTiming.scrollIntoViewIfNeeded()
+  await collapseTiming.click()
+  await expect(page.getByRole('button', { name: 'Expand live timing' })).toBeVisible()
+  await page.getByRole('button', { name: 'Expand live timing' }).click()
+
   await page.waitForTimeout(500)
   await page.screenshot({ path: 'test-results/mobile.png', fullPage: true })
 })

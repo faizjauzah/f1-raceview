@@ -4,13 +4,16 @@ A zero-backend Formula 1 race replay and telemetry visualiser. Pre-processed rac
 
 ![RaceView replay](docs/raceview.png)
 
+![RaceView with both sidebars collapsed](docs/raceview-collapsed.png)
+
 ## What it does
 
 - 3D circuit ribbon with real elevation (4× exaggeration), start/finish gantry, turn markers, and all 20 cars smoothly interpolated between one-second frames.
-- Three-column desktop layout: live timing on the left, 3D track in the centre, events on the right; both sidebars stay visible.
+- Three-column desktop layout: live timing on the left, 3D track in the centre, events on the right; both sidebars stay visible and each collapses to a narrow rail.
 - Free-orbit, top-down, and selected-driver follow cameras.
 - Live classification tower with position changes, team colours, tyre compound, pit count, and lap.
 - Overtake and pit-stop feed with driver search, filters, selected-driver filtering, and click-to-seek to three seconds before the event.
+- Larger playback bar with a 48 px play target, 44 px step targets, and a thicker timeline with a 20 px thumb.
 - Track status badge and timeline bands for green, yellow, safety car, VSC, and red flag intervals.
 - Playback speed from 1× to 20×, −5 s / +5 s stepping, and a full-width scrubber with event ticks.
 - Full keyboard control: Space play/pause, arrow-key driver and event navigation, focus-visible rings, a skip link, and live status announcements.
@@ -36,6 +39,7 @@ Race JSON is committed in `public/data/`, so no Python step is needed to run the
 - **← / →** — previous or next overtake or pit event. The replay seeks to three seconds before it and focuses the event card in the right sidebar.
 - **Enter** — activate the focused button, tab, or link. Use this for buttons because Space is reserved for playback.
 - **Escape** — clear the selected driver and pinned event.
+- **Sidebar collapse** — Tab to the collapse button in a sidebar header and press Enter; Tab to the rail button and press Enter to reopen it.
 - **Tab** — move through the skip link, race selector, camera presets, 3D viewport, timing tower, event feed, and playback controls.
 
 The 3D viewport is focusable and labelled, the timing tower and event feed use focus-visible rings, and a polite live region announces the track status, selected driver, and pinned event.
@@ -75,7 +79,7 @@ npx playwright install chromium   # once
 npm run test:e2e
 ```
 
-`test:e2e` builds the app, starts `vite preview`, checks playback, keyboard shortcuts, list navigation, driver search, camera switching, event seeking, race switching, responsive layout, and fails on console or page errors.
+`test:e2e` builds the app, starts `vite preview`, checks playback, keyboard shortcuts, list navigation, driver search, sidebar collapse, larger control targets, camera switching, event seeking, race switching, responsive layout, and fails on console or page errors.
 
 ## Deploy to GitHub Pages
 
@@ -101,6 +105,7 @@ Decisions are recorded in [docs/adr](docs/adr), and the domain vocabulary is in 
 - **Restart position feeds can glitch.** OpenF1's Monaco restart leaves one driver's location stale for roughly the first 30 seconds; the timing tower and event locations are unaffected.
 - **Post-race penalties are not applied.** The replay shows on-track order, so Spa 2024 ends with Russell crossing first even though he was later disqualified.
 - **Sector labels are approximate.** "Sector N Straight" is derived from thirds of the lap when an overtake is not near a mapped corner.
+- **Collapsing a sidebar resets its local state.** The panel is unmounted, so its search, filters, and scroll position are fresh when reopened.
 - Only races where OpenF1 has telemetry (2023+) can be exported.
 
 ## Attribution

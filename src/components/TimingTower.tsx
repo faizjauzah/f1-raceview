@@ -1,17 +1,27 @@
 import { useEffect, useRef } from 'react'
-import { Crosshair } from 'lucide-react'
+import { ChevronsLeft, Crosshair } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { indexAt, isActive, isRetired, TYRES } from '@/lib/data'
 import type { RaceData } from '@/types'
+import type { RefObject } from 'react'
 
 type TimingTowerProps = {
   race: RaceData
   time: number
   selectedDriver: string | null
   onSelectDriver: (code: string) => void
+  onCollapse: () => void
+  collapseButtonRef: RefObject<HTMLButtonElement | null>
 }
 
-export function TimingTower({ race, time, selectedDriver, onSelectDriver }: TimingTowerProps) {
+export function TimingTower({
+  race,
+  time,
+  selectedDriver,
+  onSelectDriver,
+  onCollapse,
+  collapseButtonRef,
+}: TimingTowerProps) {
   const index = indexAt(time, race.time.step, race.time.count)
   const previous = indexAt(Math.max(0, time - 10), race.time.step, race.time.count)
   const rowRefs = useRef(new Map<string, HTMLButtonElement>())
@@ -46,7 +56,19 @@ export function TimingTower({ race, time, selectedDriver, onSelectDriver }: Timi
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-300">
           Live timing
         </h2>
-        <span className="text-[9px] text-zinc-600">{rows.length} drivers</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] text-zinc-600">{rows.length} drivers</span>
+          <button
+            ref={collapseButtonRef}
+            type="button"
+            onClick={onCollapse}
+            aria-label="Collapse live timing"
+            title="Collapse live timing"
+            className="flex size-6 items-center justify-center rounded text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset"
+          >
+            <ChevronsLeft className="size-3.5" />
+          </button>
+        </div>
       </div>
       <div className="grid shrink-0 grid-cols-[34px_1fr_44px_38px_52px] items-center gap-1 border-b px-3 py-2 text-[9px] font-medium uppercase tracking-[0.18em] text-zinc-500">
         <span>Pos</span>

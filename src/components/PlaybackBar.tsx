@@ -27,54 +27,54 @@ export function PlaybackBar({ race, store, snapshot }: PlaybackBarProps) {
   const percent = (value: number) => `${Math.max(0, Math.min(100, (value / duration) * 100))}%`
 
   return (
-    <div className="sticky bottom-0 z-30 shrink-0 border-t bg-zinc-950/80 px-3 py-2.5 backdrop-blur sm:px-5">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+    <div className="sticky bottom-0 z-30 shrink-0 border-t bg-zinc-950/80 px-3 py-3 backdrop-blur sm:px-5">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
         <div className="flex items-center gap-2">
-          <div className="w-[104px]">
-            <div className="text-[8px] uppercase tracking-[0.18em] text-zinc-600">Lap</div>
-            <div className="telemetry text-xs text-zinc-200">
+          <div className="w-[90px] sm:w-[120px]">
+            <div className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Lap</div>
+            <div className="telemetry text-sm text-zinc-200">
               {lap}
               <span className="text-zinc-600"> / {race.meta.totalLaps}</span>
             </div>
           </div>
-          <div className="w-[104px]">
-            <div className="text-[8px] uppercase tracking-[0.18em] text-zinc-600">Race time</div>
-            <div className="telemetry text-xs text-zinc-200">{formatClock(snapshot.time)}</div>
+          <div className="w-[90px] sm:w-[120px]">
+            <div className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Race time</div>
+            <div className="telemetry text-sm text-zinc-200">{formatClock(snapshot.time)}</div>
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="icon"
-            className="size-8 border-zinc-800 bg-zinc-950"
+            className="size-11 border-zinc-800 bg-zinc-950"
             onClick={() => store.step(-5)}
             aria-label="Step backward 5 seconds"
           >
-            <SkipBack className="size-3.5" />
+            <SkipBack className="size-4" />
           </Button>
           <Button
             size="icon"
-            className="size-9 rounded-full"
+            className="size-12 rounded-full"
             onClick={() => store.toggle()}
             aria-label={snapshot.playing ? 'Pause replay' : 'Play replay'}
             aria-keyshortcuts="Space"
           >
-            {snapshot.playing ? <Pause className="size-4" /> : <Play className="size-4 pl-0.5" />}
+            {snapshot.playing ? <Pause className="size-5" /> : <Play className="size-5 pl-0.5" />}
           </Button>
           <Button
             variant="outline"
             size="icon"
-            className="size-8 border-zinc-800 bg-zinc-950"
+            className="size-11 border-zinc-800 bg-zinc-950"
             onClick={() => store.step(5)}
             aria-label="Step forward 5 seconds"
           >
-            <SkipForward className="size-3.5" />
+            <SkipForward className="size-4" />
           </Button>
         </div>
 
-        <div className="relative min-w-[220px] flex-1 pt-1">
-          <div className="pointer-events-none absolute inset-x-1 top-0 h-2.5 overflow-hidden rounded-sm">
+        <div className="relative min-w-[260px] flex-1 pt-1.5">
+          <div className="pointer-events-none absolute inset-x-1 top-0 h-3 overflow-hidden rounded-sm">
             {race.status
               .filter((interval) => interval.status !== 1)
               .map((interval, position) => (
@@ -90,14 +90,14 @@ export function PlaybackBar({ race, store, snapshot }: PlaybackBarProps) {
             {race.overtakes.map((event) => (
               <div
                 key={`overtake-${event.id}`}
-                className="absolute bottom-0 h-1.5 w-px bg-zinc-500/80"
+                className="absolute bottom-0 h-2 w-px bg-zinc-500/80"
                 style={{ left: percent(event.raceTime) }}
               />
             ))}
             {race.pits.map((event) => (
               <div
                 key={`pit-${event.id}`}
-                className="absolute top-0 h-1.5 w-px bg-amber-500/80"
+                className="absolute top-0 h-2 w-px bg-amber-500/80"
                 style={{ left: percent(event.raceTime) }}
               />
             ))}
@@ -112,12 +112,12 @@ export function PlaybackBar({ race, store, snapshot }: PlaybackBarProps) {
               else if (typeof value === 'number') store.seek(value)
             }}
             aria-label="Race timeline"
-            className="py-1"
+            className="py-2"
           />
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="hidden text-[8px] uppercase tracking-[0.18em] text-zinc-600 sm:block">
+          <span className="hidden text-[9px] uppercase tracking-[0.18em] text-zinc-600 sm:block">
             Speed
           </span>
           <Select
@@ -127,7 +127,7 @@ export function PlaybackBar({ race, store, snapshot }: PlaybackBarProps) {
             }}
           >
             <SelectTrigger
-              className="h-8 w-[76px] border-zinc-800 bg-zinc-950 text-xs"
+              className="h-10 w-[84px] border-zinc-800 bg-zinc-950 text-sm"
               aria-label="Playback speed"
             >
               <span className="telemetry">{snapshot.speed}×</span>

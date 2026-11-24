@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ListFilter, MapPin, Search, X } from 'lucide-react'
+import { ChevronsRight, ListFilter, MapPin, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
 import { formatEventTime, raceEvents, TYRES } from '@/lib/data'
 import type { FeedItem, RaceData } from '@/types'
+import type { RefObject } from 'react'
 
 type Filter = 'all' | 'overtake' | 'pit'
 
@@ -13,6 +14,8 @@ type EventFeedProps = {
   selectedDriver: string | null
   highlightKey: string | null
   onSeekEvent: (item: FeedItem) => void
+  onCollapse: () => void
+  collapseButtonRef: RefObject<HTMLButtonElement | null>
 }
 
 function DriverCode({ code, color }: { code: string; color?: string }) {
@@ -40,11 +43,19 @@ function Compound({ name }: { name: string | null }) {
   )
 }
 
-export function EventFeed({ race, selectedDriver, highlightKey, onSeekEvent }: EventFeedProps) {
+export function EventFeed({
+  race,
+  selectedDriver,
+  highlightKey,
+  onSeekEvent,
+  onCollapse,
+  collapseButtonRef,
+}: EventFeedProps) {
   const [filter, setFilter] = useState<Filter>('all')
   const [selectedOnly, setSelectedOnly] = useState(false)
   const [query, setQuery] = useState('')
   const itemRefs = useRef(new Map<string, HTMLButtonElement>())
+  const lastHighlight = useRef<string | null>(null)
   const drivers = useMemo(
     () => new Map(race.drivers.map((driver) => [driver.code, driver])),
     [race.drivers],
@@ -53,10 +64,16 @@ export function EventFeed({ race, selectedDriver, highlightKey, onSeekEvent }: E
   const search = query.trim().toLowerCase()
 
   useEffect(() => {
-    if (!highlightKey) return
+    if (!highlightKey) {
+      lastHighlight.current = null
+      return
+    }
     const node = itemRefs.current.get(highlightKey)
     node?.scrollIntoView({ block: 'nearest' })
-    node?.focus({ preventScroll: true })
+    if (lastHighlight.current && lastHighlight.current !== highlightKey) {
+      node?.focus({ preventScroll: true })
+    }
+    lastHighlight.current = highlightKey
   }, [highlightKey])
 
   const matchesSearch = (code: string) => {
@@ -88,9 +105,21 @@ export function EventFeed({ race, selectedDriver, highlightKey, onSeekEvent }: E
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-300">
           Events
         </h2>
-        <span aria-live="polite" className="text-[9px] text-zinc-600">
-          {items.length} {items.length === 1 ? 'event' : 'events'}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span aria-live="polite" className="text-[9px] text-zinc-600">
+            {items.length} {items.length === 1 ? 'event' : 'events'}
+          </span>
+          <button
+            ref={collapseButtonRef}
+            type="button"
+            onClick={onCollapse}
+            aria-label="Collapse events"
+            title="Collapse events"
+            className="flex size-6 items-center justify-center rounded text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset"
+          >
+            <ChevronsRight className="size-3.5" />
+          </button>
+        </div>
       </div>
 
       <div className="shrink-0 space-y-2 border-b p-2.5">
